@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級任務分配工具 - Classroom Duties Tool</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>班級任務分配與整潔管理｜701班級任務系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         :root {
-            --bg-main: #f4f6f8;
+            --bg-main: #fbfaf6;
             --white: #ffffff;
             --text-main: #2c3e50;
             --text-sub: #6c757d;
-            --accent-green: #1f5f5b;
-            --accent-green-hover: #164643;
+            --accent-green: #617d70;
+            --accent-green-hover: #4f685e;
             --border-color: #e2e8f0;
             --border-dark: #cbd5e1;
             --radius: 8px;
@@ -27,7 +27,7 @@
         }
 
         body {
-            background-color: var(--bg-main);
+            background: linear-gradient(180deg, #f3f5ef 0, #fbfaf6 190px, #fbfaf6 100%);
             color: var(--text-main);
             line-height: 1.5;
             padding: 12px 10px;
@@ -44,7 +44,8 @@
             padding: 16px 20px;
             margin-bottom: 12px;
             box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
+            border: 1px solid #dde5dc;
+            background: linear-gradient(135deg, #fffefb 0%, #f1f5ef 58%, #f7f2e8 100%);
         }
 
         .header-subtitle {
@@ -444,7 +445,7 @@
 
         @media print {
             body { background: white !important; padding: 10px !important; margin: 0 !important; }
-            .header-card, .student-card, .rule-panel, .section-header, .options-bar, .toolbar, .add-form, .task-list, .stats-banner, .action-btns {
+            .header-card, .student-card, .rule-panel, .section-header, .options-bar, .toolbar, .add-form, .task-list, .stats-banner, .action-btns, .screen-help, .no-print {
                 display: none !important;
             }
             .section-card { box-shadow: none !important; border: none !important; padding: 0 !important; }
@@ -454,22 +455,31 @@
             .result-title { font-size: 18px !important; margin-bottom: 10px !important; }
             .result-table th, .result-table td { padding: 6px 6px !important; font-size: 12px !important; }
         }
-    </style>
+    
+        .lunch-duty-note { margin-top:8px; padding:10px 12px; border-radius:10px; background:#fff8e8; border:1px solid #f0dfb5; font-size:12px; line-height:1.7; color:#5f5135; }
+        .lunch-duty-note b { color:#8a6424; }
+        .lunch-role { display:inline-block; margin:3px 4px 3px 0; padding:4px 8px; border-radius:999px; background:#fffaf0; border:1px solid #ead9ae; font-size:11px; }
+        .section-card { border-top:3px solid #dbece6; }
+        .btn { border-radius:9px !important; }
+        .task-card { transition: transform .12s ease, box-shadow .12s ease; }
+        .task-card:hover { transform: translateY(-1px); box-shadow:0 4px 14px rgba(45,85,75,.08); }
+
+</style>
 </head>
 <body>
 
 <div class="container">
     <div class="header-card">
+        <a href="../index.html" class="btn" style="background:#475569;color:#fff;text-decoration:none;margin-bottom:12px;display:inline-flex;padding:8px 16px;border-radius:8px;font-weight:700">⬅️ 返回大廳四 (導師神器)</a>
         <div class="header-subtitle">CLASSROOM DUTIES • 班級任務</div>
-        <div class="header-title">班級任務分配工具</div>
-        <div class="header-desc">學生名單與各區任務匯入獨立運作，匯入幹部時絕不修改全班總人數。</div>
+        <div class="header-title">🌱 班級任務分配與整潔管理</div>
+        <div class="header-desc">一次完成幹部、小老師、掃地與每日值日分配；學生可查職責，老師可直接輸出檢核 Excel、列印或另存 PDF。</div>
     </div>
 
     <input type="file" id="file-students-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleStudentsImport(event)">
     <input type="file" id="file-officers-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleOfficersImport(event)">
     <input type="file" id="file-clean-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleCleanImport(event)">
 
-    <a href="../index.html" class="btn" style="background:#475569;color:#fff;text-decoration:none;margin-bottom:12px;display:inline-flex;padding:8px 16px;border-radius:6px;font-weight:700">⬅️ 返回大廳四 (導師神器)</a>
     <div class="student-card">
         <div class="student-mgmt-header">
             <div class="student-mgmt-title">👥 學生名單管理 (共 <span id="student-count">25</span> 人)</div>
@@ -524,8 +534,9 @@
                 <div class="action-btns">
                     <button class="btn" onclick="exportToExcel()">儲存 Excel</button>
                     <button class="btn" onclick="triggerOfficersImport()">載入幹部 Excel/CSV</button>
-                    <button class="btn" onclick="printReport('officers')">僅列印此表</button>
-                    <button class="btn btn-primary" onclick="printReport('all')">列印全部結果</button>
+                    <button class="btn" onclick="printReport('officers')">列印分配表</button>
+                    <button class="btn" onclick="printRoleDuties()">📖 列印職責說明</button>
+                    <button class="btn btn-primary" onclick="printReport('all')">列印全部分配</button>
                 </div>
             </div>
 
@@ -585,10 +596,12 @@
                     <div class="section-subtitle">依教室實際情況調整工作與人數，再亂數分配。</div>
                 </div>
                 <div class="action-btns">
-                    <button class="btn" onclick="exportToExcel()">儲存 Excel</button>
+                    <button class="btn" onclick="exportToExcel()">儲存分配 Excel</button>
                     <button class="btn" onclick="triggerCleanImport()">載入掃地 Excel/CSV</button>
-                    <button class="btn" onclick="printReport('clean')">僅列印此表</button>
-                    <button class="btn btn-primary" onclick="printReport('all')">列印全部結果</button>
+                    <button class="btn" onclick="exportInspectionWorkbook()">📗 產生股長檢核 Excel</button>
+                    <button class="btn" onclick="printInspection('learning')">📋 列印學習細項版</button>
+                    <button class="btn btn-primary" onclick="printInspection('daily')">☑️ 列印20天日常版 / PDF</button>
+                    <button class="btn" onclick="printLunchDuty()">🌞 列印每日值日分工</button>
                 </div>
             </div>
 
@@ -609,6 +622,11 @@
                 <button class="btn" onclick="clearCleanAssign()">清除全部分配</button>
                 <button class="btn" onclick="clearCleanSubOnly()">僅清除代理人</button>
                 <button class="btn" onclick="resetDefaultClean()">恢復預設工作</button>
+            </div>
+
+            <div class="screen-help no-print" style="margin:10px 0 14px;padding:10px 12px;background:#f7f8f4;border:1px solid #e2e7df;border-radius:12px;font-size:13px;line-height:1.7;">
+                <b>🧾 股長檢核整合：</b> 每項掃地工作可設定「檢核股長＋檢查細項」。分配完成後，可直接產生 Excel，或列印／另存 PDF。<br>
+                第一次使用「學習細項版」教股長怎麼檢查；熟悉後改用「20天日常版」。每日值日生由環保股長督導；第一次可用學習細項版建立標準，熟悉後使用20天日常檢核。
             </div>
 
             <div class="add-form">
@@ -689,28 +707,74 @@
         { id: 'off_31', name: '收表單、聯絡簿', category: '收發長', count: 2, assigned: [], substitute: [] }
     ];
 
+    const officerDutyDetails = {
+        '班長': ['受導師指導處理班務','上課提醒老師','集合、整隊與帶隊','與風紀股長共同維持秩序','代表班級出席會報'],
+        '副班長': ['代理班長職務','填寫班會紀錄簿與點名簿','負責上課點名，放學後送回學務處','登記每日出缺勤狀況'],
+        '風紀股長': ['維持班級秩序','代理副班長職務','同學若有校內外違規行為，向老師報告'],
+        '學藝股長': ['設計佈置教室與編製壁報','保管班級公用圖書','填寫教室日誌','收發作業簿並送交各科教師'],
+        '體育股長': ['領取與保管體育器材','協助健康檢查','辦理班際康樂比賽與運動會'],
+        '事務股長': ['保管班級公物','統計學期末班費','教室花台澆水與雜草整理','開關電源並維護節約能源','定期回報冷氣度數'],
+        '環保股長': ['排定值日生與填寫黑板紀錄','領取粉筆等用品','放學門窗上鎖','領導班級勞動服務','午餐工作聯繫與監督','701實際分工：督導教室內掃、走廊與5位每日值日生'],
+        '資訊股長': ['管理、維護班級資訊設備並進行簡易排除','資訊設備故障通報'],
+        '衛生股長': ['領取打掃用具','分配並檢查同學打掃工作','督導垃圾分類與資源回收','701實際分工：主要檢核外掃區與生物實驗室'],
+        '輔導股長': ['記載輔導活動記錄簿','協助輔導活動上課事宜','協助整理輔導資料與測驗','協助同學日常生活及學業困難']
+    };
+
+    const helperCommonDuties = ['課前先詢問任課老師：下堂課是否考試、收作業或需特殊學用品','協助確認大屏／投影、電子書或數位教材與課堂設備','鐘響提醒同學就座並備妥課本、講義或平板','收發作業／習作／學習單，登記缺交並回報','依老師要求協助分發考卷、登記或提醒訂正','下課主動確認回家作業與下次注意事項，清楚登記聯絡事項','課堂冷場時勇敢帶頭回應，協助帶動正向互動'];
+    const helperSubjectDuties = {
+        '國文小老師':['協助電子書生字成語／影音點播','作文簿收發','追蹤背誦進度'],
+        '英文小老師':['協助英語電子書音檔／英聽播放','提醒攜帶單字講義','協助抽背登記'],
+        '數學小老師':['協助大屏電子幾何工具／計算機軟體','收發隨堂練習卷與測驗卷'],
+        '自然小老師':['提醒實驗室規範','協助領取與清點器材','協助播放實驗動畫／模擬軟體','督促實驗桌清潔與器材歸位'],
+        '歷史小老師':['協助圖表、地圖或數位教材點閱','提醒攜帶講義或學習單'],
+        '地理小老師':['協助電子地圖／Google Earth／圖表教材','提醒攜帶講義或學習單'],
+        '公民小老師':['協助圖表與數位教材點閱','提醒攜帶講義或學習單'],
+        '資訊小老師':['協助電腦教室／平板車領取與歸還','提醒同學登入／登出帳號並接上充電線'],
+        '生活科技小老師':['協助專科教室與器材準備、借還','提醒安全規範與器材歸位'],
+        '體育小老師':['提前確認上課地點','提醒同學整隊前往','協助借還器材'],
+        '健康小老師':['提前確認教材與上課需求','協助收發學習單與課堂用品'],
+        '音樂小老師':['提前確認專科教室／上課地點','協助借還與準備課堂器材'],
+        '美術小老師':['提前確認專科教室／上課地點','協助借還與準備課堂器材'],
+        '表演藝術小老師':['提前確認專科教室／上課地點','帶領同學準時移動','協助借還器材']
+    };
+    const helperFlexibleTips = ['下午第一節可在午休前或前一天先確認需求','前一節若是室外課，利用前一大下課或更早準備','需換教室時提早3～5分鐘提醒同學移動'];
+
+    function roleDutySummary(task){
+        if(task.category==='班級幹部') return officerDutyDetails[task.name] || [];
+        if(task.category==='科目小老師') return [...helperCommonDuties, ...(helperSubjectDuties[task.name]||[]), ...helperFlexibleTips];
+        return [];
+    }
+
+    function showRoleDuties(taskId){
+        const t=officerTasks.find(x=>x.id===taskId); if(!t) return;
+        const duties=roleDutySummary(t);
+        const title=t.category==='科目小老師' ? `${t.name}｜職責與任務` : `${t.name}｜工作職責`;
+        const body=duties.length ? duties.map(x=>`• ${x}`).join('\n') : '目前尚未設定詳細職責，可由老師依班級需求補充。';
+        alert(`${title}\n\n${body}`);
+    }
+
     let cleanTasks = [
-        { id: 'cln_1', name: '教室前半部掃地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_2', name: '教室後半部掃地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_3', name: '教室前半部拖地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_4', name: '教室後半部拖地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_5', name: '黑板與講桌', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_6', name: '窗戶台、前後門', category: '教室內掃', count: 2, assigned: [], substitute: [] },
-        { id: 'cln_7', name: '置物櫃與教室後方', category: '教室內掃', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_8', name: '窗戶與窗溝', category: '教室內掃', count: 2, assigned: [], substitute: [] },
-        { id: 'cln_9', name: '掃具間整理+倒垃圾', category: '教室內掃', count: 2, assigned: [], substitute: [] },
-        { id: 'cln_10', name: '教室外走廊掃地', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_11', name: '教室外走廊拖地', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_12', name: '洗手台與週邊地面', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_13', name: '洗手台與週邊地面', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_14', name: '701旁空地/花台', category: '外掃區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_15', name: '901旁空地', category: '外掃區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_16', name: '生物實驗室掃地/整理垃圾', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_17', name: '生物實驗室拖地/整理垃圾', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_18', name: '桌面/黑板', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_19', name: '洗手台/門窗', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_20', name: '開關門窗/開關冷氣/清冰箱(約一週一次)', category: '教室及外掃區', count: 1, assigned: [], substitute: [] },
-        { id: 'cln_21', name: '值日生(3人)', category: '值日生', count: 3, assigned: [], substitute: [] }
+        { id:'cln_1', name:'教室前半部掃地', category:'教室內掃', count:1, checker:'環保股長', details:'桌椅下方、走道紙屑與垃圾清除乾淨', assigned:[], substitute:[] },
+        { id:'cln_2', name:'教室後半部掃地', category:'教室內掃', count:1, checker:'環保股長', details:'垃圾桶周遭、後方走道與桌椅下方清潔', assigned:[], substitute:[] },
+        { id:'cln_3', name:'教室前半部拖地', category:'教室內掃', count:1, checker:'環保股長', details:'拖把擰乾，地面均勻拖拭，無明顯水漬與污垢', assigned:[], substitute:[] },
+        { id:'cln_4', name:'教室後半部拖地', category:'教室內掃', count:1, checker:'環保股長', details:'後半部地面均勻拖拭，無積水與明顯污垢', assigned:[], substitute:[] },
+        { id:'cln_5', name:'黑板與講桌', category:'教室內掃', count:1, checker:'環保股長', details:'黑板擦拭乾淨、板溝無粉筆灰；講桌桌面整潔', assigned:[], substitute:[] },
+        { id:'cln_6', name:'窗戶台、前後門', category:'教室內掃', count:2, checker:'環保股長', details:'窗台無灰塵垃圾；前後門與門邊保持整潔', assigned:[], substitute:[] },
+        { id:'cln_7', name:'置物櫃與教室後方', category:'教室內掃', count:1, checker:'環保股長', details:'置物櫃周邊與教室後方無垃圾、物品排列整齊', assigned:[], substitute:[] },
+        { id:'cln_8', name:'窗戶與窗溝', category:'教室內掃', count:2, checker:'環保股長', details:'窗戶玻璃與窗溝無明顯灰塵、垃圾及積水', assigned:[], substitute:[] },
+        { id:'cln_9', name:'掃具間整理+倒垃圾', category:'教室內掃', count:2, checker:'環保股長', details:'掃具歸位整齊；垃圾依規定清運，垃圾桶周邊乾淨', assigned:[], substitute:[] },
+        { id:'cln_10', name:'教室外走廊掃地', category:'走廊與公共區', count:1, checker:'環保股長', details:'走廊地面與牆角無紙屑、落葉及明顯灰塵', assigned:[], substitute:[] },
+        { id:'cln_11', name:'教室外走廊拖地', category:'走廊與公共區', count:1, checker:'環保股長', details:'走廊均勻拖拭，無明顯污垢、積水並注意防滑', assigned:[], substitute:[] },
+        { id:'cln_12', name:'洗手台與週邊地面', category:'走廊與公共區', count:1, checker:'環保股長', details:'洗手台無殘渣污垢；周邊地面無積水、垃圾', assigned:[], substitute:[] },
+        { id:'cln_13', name:'洗手台與週邊地面', category:'走廊與公共區', count:1, checker:'環保股長', details:'洗手台無殘渣污垢；周邊地面無積水、垃圾', assigned:[], substitute:[] },
+        { id:'cln_14', name:'701旁空地/花台', category:'外掃區', count:1, checker:'衛生股長', details:'地面、花台周邊無落葉、紙屑與明顯垃圾', assigned:[], substitute:[] },
+        { id:'cln_15', name:'901旁空地', category:'外掃區', count:1, checker:'衛生股長', details:'空地地面無落葉、紙屑與明顯垃圾', assigned:[], substitute:[] },
+        { id:'cln_16', name:'生物實驗室掃地/整理垃圾', category:'生物實驗室', count:1, checker:'衛生股長', details:'地面與桌椅下方掃淨；垃圾分類並整理完成', assigned:[], substitute:[] },
+        { id:'cln_17', name:'生物實驗室拖地/整理垃圾', category:'生物實驗室', count:1, checker:'衛生股長', details:'地面均勻拖拭無積水；垃圾整理完成', assigned:[], substitute:[] },
+        { id:'cln_18', name:'桌面/黑板', category:'生物實驗室', count:1, checker:'衛生股長', details:'實驗桌面清潔整齊；黑板與板溝擦拭乾淨', assigned:[], substitute:[] },
+        { id:'cln_19', name:'洗手台/門窗', category:'生物實驗室', count:1, checker:'衛生股長', details:'洗手台無殘渣污垢；門窗與周邊保持乾淨', assigned:[], substitute:[] },
+        { id:'cln_20', name:'開關門窗/開關冷氣/清冰箱(約一週一次)', category:'教室及外掃區', count:1, checker:'衛生股長', details:'依規定完成門窗、冷氣開關；每週檢查並清理冰箱', assigned:[], substitute:[] },
+        { id:'cln_21', name:'每日值日生(5人)', category:'值日生', count:5, checker:'環保股長', details:'第1位主責餐車與廚餘桶前置、清潔及歸位；第2～5位共同搬運飯菜、湯、廚餘及水果，依數量與重量平均分工。第2、3位上午擦黑板，第4、5位下午擦黑板；擦黑板時若板擦過髒，順手協助清理板擦。', assigned:[], substitute:[] }
     ];
 
     function toggleRulePanel() {
@@ -935,6 +999,8 @@
             });
 
             renderAll();
+            normalizeCleanMeta();
+            saveSystemState();
             alert(`掃地名單載入成功！已完成 ${matchCount} 項工作對應，全班總人數保持 ${students.length} 人。`);
             event.target.value = '';
         };
@@ -957,7 +1023,7 @@
                 '姓名': name,
                 '幹部職稱': officer ? officer.name : '',
                 '幹部代理人職務': officerSub ? `(代理 ${officerSub.name})` : '',
-                '掃地工作': clean ? clean.name : '',
+                '掃地工作': clean ? cleanAssignmentLabel(clean, s) : '',
                 '掃地代理人工作': cleanSub ? `(代理 ${cleanSub.name})` : ''
             };
         });
@@ -1083,6 +1149,7 @@
                         </select>
                         <button class="btn btn-sm" onclick="addOfficerStudent('${t.id}')">+正職</button>
                         <button class="btn btn-sm" onclick="addOfficerSub('${t.id}')">+代理</button>
+                        <button class="btn btn-sm" onclick="showRoleDuties('${t.id}')">📖 職責</button>
                         <button class="btn btn-sm" onclick="editOfficerTask('${t.id}')">✏️ 編輯</button>
                         <button class="btn btn-sm" onclick="deleteOfficerTask('${t.id}')">刪除</button>
                     </div>
@@ -1107,6 +1174,31 @@
             `學生人數：${students.length} 人 | 工作名額：${totalQuota} 人次 / 已分配 ${totalAssigned} 人次 / 涉及 ${uniqueStudents} 位學生`;
     }
 
+    function getLunchDutyTask() { return cleanTasks.find(t => t.category === '值日生' || t.id === 'cln_21'); }
+
+    function lunchDutyRoles(task) {
+        const a = (task && task.assigned) ? task.assigned : [];
+        const who = i => a[i] || '待分配';
+        const commonMove = '與第2～5位共同搬運飯、菜、湯、廚餘及水果籃；依當日餐點數量與重量平均分配，不固定誰拿哪一桶。較重的湯桶以安全為優先，彼此主動協助。';
+        return [
+            {student:who(0), title:'第1位｜餐車・廚餘桶主責', detail:'午餐前將廚餘桶拿到餐車旁並套好塑膠袋；餐後清理、擦拭餐車。廚餘倒完後，確認廚餘桶清潔並拿回教室歸位。'},
+            {student:who(1), title:'第2位｜上午黑板＋共同搬運', detail:'上午負責擦黑板；若發現板擦粉塵過多、影響使用，順手協助清理板擦。' + commonMove},
+            {student:who(2), title:'第3位｜上午黑板＋共同搬運', detail:'上午負責擦黑板；若發現板擦粉塵過多、影響使用，順手協助清理板擦。' + commonMove},
+            {student:who(3), title:'第4位｜下午黑板＋共同搬運', detail:'下午負責擦黑板；若發現板擦粉塵過多、影響使用，順手協助清理板擦。' + commonMove},
+            {student:who(4), title:'第5位｜下午黑板＋共同搬運', detail:'下午負責擦黑板；若發現板擦粉塵過多、影響使用，順手協助清理板擦。' + commonMove}
+        ];
+    }
+
+    function cleanAssignmentLabel(task, student) {
+        if (!task) return '';
+        if (task.category === '值日生' || task.id === 'cln_21') {
+            const idx = task.assigned.indexOf(student);
+            const roles = ['餐車・廚餘桶主責','上午黑板＋共同搬運','上午黑板＋共同搬運','下午黑板＋共同搬運','下午黑板＋共同搬運'];
+            return `每日值日生－${roles[idx] || `第${idx+1}位`}`;
+        }
+        return task.name;
+    }
+
     function renderClean() {
         const list = document.getElementById('clean-list');
         list.innerHTML = cleanTasks.map(t => {
@@ -1124,13 +1216,15 @@
                 <div class="task-card">
                     <div class="task-info">
                         <div class="task-name">${t.name}</div>
-                        <div class="task-category">${t.category}</div>
+                        <div class="task-category">${t.category}${t.checker ? ` ｜ ${t.checker}` : ``}</div>
+                        ${(t.category === '值日生' || t.id === 'cln_21') ? `` : `<div style="font-size:12px;color:#667085;margin-top:4px;line-height:1.45;">${t.details || '尚未設定檢查細項'}</div>`}
                     </div>
                     <div class="task-count-box">
                         <input type="number" min="1" max="10" value="${t.count}" class="count-input" onchange="updateCleanCount('${t.id}', this.value)">
                         <span class="status-text">${statusStr}</span>
                     </div>
                     <div>${assignedHtml} ${subHtml}</div>
+                    ${(t.category === '值日生' || t.id === 'cln_21') ? `<div class="lunch-duty-note"><b>🌞 每日值日五人分工｜環保股長督導</b><br>${lunchDutyRoles(t).map(r => `<span class="lunch-role"><b>${r.student}</b>｜${r.title.replace(/^第\d位｜/,'')}</span>`).join('')}</div>` : ''}
                     <div class="task-controls">
                         <select class="task-select" id="select-${t.id}">
                             <option value="">選擇學生</option>
@@ -1150,7 +1244,7 @@
             <tr>
                 <td>${t.category}</td>
                 <td>${t.name}</td>
-                <td>${t.assigned.join('、')}</td>
+                <td>${(t.category === '值日生' || t.id === 'cln_21') ? lunchDutyRoles(t).filter(r=>r.student!=='待分配').map(r=>`${r.student}（${r.title.replace(/^第\d位｜/,'')}）`).join('、') : t.assigned.join('、')}</td>
                 <td>${t.substitute.join('、')}</td>
             </tr>
         `).join('');
@@ -1191,16 +1285,20 @@
     function editCleanTask(id) {
         const task = cleanTasks.find(t => t.id === id);
         if (!task) return;
-        const newName = prompt('請輸入修改後的掃地工作/區域名稱：', task.name);
-        if (newName !== null) {
-            const trimmed = newName.trim();
-            if (trimmed) {
-                task.name = trimmed;
-                renderClean();
-                renderRules();
-                updateSelectDropdowns();
-            }
-        }
+        const newName = prompt('① 掃地工作／區域名稱：', task.name);
+        if (newName === null) return;
+        const newCategory = prompt('② 類別（例：教室內掃、外掃區、生物實驗室）：', task.category);
+        if (newCategory === null) return;
+        const newChecker = prompt('③ 檢核股長（例：環保股長、衛生股長）：', task.checker || '');
+        if (newChecker === null) return;
+        const newDetails = prompt('④ 檢查細項（給股長第一次學習使用）：', task.details || '');
+        if (newDetails === null) return;
+        if (newName.trim()) task.name = newName.trim();
+        if (newCategory.trim()) task.category = newCategory.trim();
+        task.checker = newChecker.trim();
+        task.details = newDetails.trim();
+        saveSystemState();
+        renderClean(); renderRules(); updateSelectDropdowns();
     }
 
     function removeOfficerAssigned(taskId, student) {
@@ -1335,7 +1433,7 @@
         const catInput = document.getElementById('add-clean-cat');
         const name = nameInput.value.trim();
         if (!name) return;
-        cleanTasks.push({ id: 'cln_' + Date.now(), name, category: catInput.value, count: 1, assigned: [], substitute: [] });
+        cleanTasks.push({ id: 'cln_' + Date.now(), name, category: catInput.value, count: 1, checker: catInput.value === '外掃區' || catInput.value === '生物實驗室' ? '衛生股長' : '環保股長', details: '', assigned: [], substitute: [] });
         nameInput.value = '';
         renderClean();
         updateSelectDropdowns();
@@ -1361,8 +1459,8 @@
         renderClean(); 
     }
 
-    function resetDefaultOfficers() { location.reload(); }
-    function resetDefaultClean() { location.reload(); }
+    function resetDefaultOfficers() { if(confirm('確定恢復原始預設？這會清除本機已儲存的目前設定。')) { localStorage.removeItem('classroomDutySystem_v2'); location.reload(); } }
+    function resetDefaultClean() { if(confirm('確定恢復原始預設？這會清除本機已儲存的目前設定。')) { localStorage.removeItem('classroomDutySystem_v2'); location.reload(); } }
 
     /* ========== 核心隨機指派 ========== */
 
@@ -1515,17 +1613,226 @@
         renderClean();
     }
 
-    function printReport(mode) {
-        document.body.classList.remove('print-officers-only', 'print-clean-only');
-        if (mode === 'officers') {
-            document.body.classList.add('print-officers-only');
-        } else if (mode === 'clean') {
-            document.body.classList.add('print-clean-only');
+    function normalizeCleanMeta() {
+        cleanTasks.forEach(t => {
+            if (!('checker' in t)) t.checker = (t.category || '').includes('外掃') || (t.category || '').includes('生物') ? '衛生股長' : '環保股長';
+            if (!('details' in t)) t.details = '';
+            if (t.id === 'cln_21' || t.category === '值日生') {
+                t.name = '每日值日生(5人)'; t.count = 5; t.checker = '環保股長';
+                t.details = '第1位主責餐車與廚餘桶；第2～5位共同搬運並平均分工。第2、3位上午擦黑板，第4、5位下午擦黑板；板擦過髒時一起協助清理。';
+            }
+        });
+    }
+
+    function saveSystemState() {
+        try {
+            localStorage.setItem('classroomDutySystem_v2', JSON.stringify({students, officerTasks, cleanTasks, officerRules, cleanRules}));
+        } catch(e) { console.warn('無法儲存本機設定', e); }
+    }
+
+    function loadSystemState() {
+        try {
+            const raw = localStorage.getItem('classroomDutySystem_v2');
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (Array.isArray(d.students)) students = d.students;
+            if (Array.isArray(d.officerTasks)) officerTasks = d.officerTasks;
+            if (Array.isArray(d.cleanTasks)) cleanTasks = d.cleanTasks;
+            if (Array.isArray(d.officerRules)) officerRules = d.officerRules;
+            if (Array.isArray(d.cleanRules)) cleanRules = d.cleanRules;
+            normalizeCleanMeta();
+        } catch(e) { console.warn('無法讀取本機設定', e); }
+    }
+
+    function taskRowsByChecker(checker) {
+        return cleanTasks.filter(t => (t.checker || '') === checker && t.assigned.length > 0);
+    }
+
+    function applyExcelTheme(ws, kind='learning') {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const navy = '35546D', blue = 'DCEAF3', pale = 'EEF5F1', cream = 'FFF9EC', line = 'AAB9C4', white='FFFFFF', text='243746';
+        const thin = { style:'thin', color:{rgb:line} };
+        const border = { top:thin, bottom:thin, left:thin, right:thin };
+        for (let r=range.s.r; r<=range.e.r; r++) {
+            for (let c=range.s.c; c<=range.e.c; c++) {
+                const a=XLSX.utils.encode_cell({r,c});
+                if(!ws[a]) ws[a]={t:'s',v:''};
+                ws[a].s = {font:{name:'Noto Sans TC',sz:10,color:{rgb:text}}, alignment:{vertical:'center',wrapText:true}, border};
+            }
         }
-        window.print();
-        setTimeout(() => {
-            document.body.classList.remove('print-officers-only', 'print-clean-only');
-        }, 500);
+        // Main title
+        if (ws['A1']) ws['A1'].s={font:{name:'Noto Sans TC',sz:16,bold:true,color:{rgb:white}},fill:{fgColor:{rgb:navy}},alignment:{horizontal:'center',vertical:'center'},border};
+        // Instruction / metadata rows
+        [1].forEach(r=>{ for(let c=range.s.c;c<=range.e.c;c++){const a=XLSX.utils.encode_cell({r,c}); if(ws[a]) ws[a].s={font:{name:'Noto Sans TC',sz:10,color:{rgb:text}},fill:{fgColor:{rgb:cream}},alignment:{vertical:'center',wrapText:true},border};}});
+        const headerRow = kind==='learning' ? 3 : kind==='daily' ? 2 : 4;
+        for(let c=range.s.c;c<=range.e.c;c++){
+            const a=XLSX.utils.encode_cell({r:headerRow,c}); if(ws[a]) ws[a].s={font:{name:'Noto Sans TC',sz:10,bold:true,color:{rgb:white}},fill:{fgColor:{rgb:navy}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+        }
+        for(let r=headerRow+1;r<=range.e.r;r++){
+            for(let c=range.s.c;c<=range.e.c;c++){
+                const a=XLSX.utils.encode_cell({r,c}); if(!ws[a]) continue;
+                ws[a].s={font:{name:'Noto Sans TC',sz:10,color:{rgb:text}},fill:{fgColor:{rgb:(r-headerRow)%2? 'FFFFFF':pale}},alignment:{vertical:'center',wrapText:true,horizontal:(kind==='daily'&&c>=2)?'center':'left'},border};
+            }
+        }
+        ws['!rows']=ws['!rows']||[];
+        ws['!rows'][0]={hpt:28}; ws['!rows'][1]={hpt:34};
+        if(kind==='learning') ws['!rows'][3]={hpt:24};
+        if(kind==='daily') ws['!rows'][2]={hpt:28};
+        for(let r=headerRow+1;r<=range.e.r;r++) ws['!rows'][r]={hpt:30};
+        ws['!freeze']={xSplit:0,ySplit:headerRow+1};
+        ws['!margins']={left:0.25,right:0.25,top:0.35,bottom:0.35,header:0.15,footer:0.15};
+    }
+
+    function exportInspectionWorkbook() {
+        normalizeCleanMeta();
+        const wb = XLSX.utils.book_new();
+        const checkers = [...new Set(cleanTasks.map(t => t.checker).filter(Boolean))];
+        checkers.forEach(checker => {
+            const tasks = taskRowsByChecker(checker);
+            if (!tasks.length) return;
+
+            // 學習版：第一次換工作時，讓股長知道「要檢查什麼」
+            const learning = [[`${checker}｜整潔檢核學習表`, '', '', ''],
+                [`負責幹部：${checker}　｜　使用說明：第一次換工作時使用，依檢查細項帶著同學逐項確認。`, '', '', ''],
+                ['', '', '', ''],
+                ['區域','打掃項目','負責座號與姓名','檢查細項']];
+            tasks.forEach(t => learning.push([t.category, t.name, t.assigned.join('、'), t.details || '（請於系統中補充檢查細項）']));
+            const ws1 = XLSX.utils.aoa_to_sheet(learning);
+            ws1['!merges']=[XLSX.utils.decode_range('A1:D1'),XLSX.utils.decode_range('A2:D2')];
+            ws1['!cols']=[{wch:16},{wch:28},{wch:28},{wch:62}];
+            applyExcelTheme(ws1,'learning');
+            XLSX.utils.book_append_sheet(wb, ws1, `${checker}-學習版`.slice(0,31));
+
+            // 20天版：熟悉後只留下大格紀錄
+            const daily = [[`${checker}｜20天日常整潔檢核表`, ...Array(21).fill('')],
+                [`負責幹部：${checker}　｜　熟悉標準後使用；日期自行填寫，合格 ✓、需改善 ✗。`, ...Array(21).fill('')],
+                ['區域','工作／負責學生', ...Array.from({length:20},(_,i)=>`第${i+1}天\n__/__`)]];
+            tasks.forEach(t => daily.push([t.category, `${t.name}\n${t.assigned.join('、')}`, ...Array(20).fill('')]));
+            daily.push(['股長每日確認簽章','',...Array(20).fill('')]);
+            const ws2 = XLSX.utils.aoa_to_sheet(daily);
+            ws2['!merges']=[XLSX.utils.decode_range('A1:V1'),XLSX.utils.decode_range('A2:V2')];
+            ws2['!cols']=[{wch:14},{wch:30},...Array(20).fill({wch:7})];
+            applyExcelTheme(ws2,'daily');
+            XLSX.utils.book_append_sheet(wb, ws2, `${checker}-20天版`.slice(0,31));
+        });
+
+        const lunch = getLunchDutyTask();
+        if (lunch && lunch.assigned.length) {
+            const lunchRows = [['每日值日生五人分工表','','',''],
+                ['督導','環保股長','',''],
+                ['共同原則','第2～5位共同搬運，依當日餐點數量與重量平均分工；分工有負責，共同環境也一起維護。','',''],
+                ['','','',''],
+                ['順位','學生','主要任務','工作細節']];
+            lunchDutyRoles(lunch).forEach((r,i)=>lunchRows.push([`第${i+1}位`,r.student,r.title.replace(/^第\d位｜/,''),r.detail]));
+            const wsLunch=XLSX.utils.aoa_to_sheet(lunchRows);
+            wsLunch['!merges']=[XLSX.utils.decode_range('A1:D1'),XLSX.utils.decode_range('B3:D3')];
+            wsLunch['!cols']=[{wch:10},{wch:18},{wch:26},{wch:70}];
+            applyExcelTheme(wsLunch,'lunch');
+            XLSX.utils.book_append_sheet(wb,wsLunch,'每日值日生分工');
+        }
+        if (!wb.SheetNames.length) { alert('目前尚未有可輸出的分配資料。'); return; }
+        XLSX.writeFile(wb, `股長整潔檢核表_美化版_${new Date().toISOString().slice(0,10)}.xlsx`, {cellStyles:true});
+    }
+
+    function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function buildInspectionPrintHtml(mode) {
+        normalizeCleanMeta();
+        const checkers = [...new Set(cleanTasks.map(t => t.checker).filter(Boolean))];
+        const sections = checkers.map(checker => {
+            const tasks = taskRowsByChecker(checker);
+            if (!tasks.length) return '';
+            if (mode === 'learning') {
+                const rows = tasks.map(t => `<tr><td>${escHtml(t.category)}</td><td>${escHtml(t.name)}</td><td>${escHtml(t.assigned.join('、'))}</td><td>${escHtml(t.details || '請補充檢查細項')}</td></tr>`).join('');
+                return `<section><h1>${escHtml(checker)}｜整潔檢查學習表</h1><p>第一次換工作時使用。請依「檢查細項」逐項確認，讓股長熟悉各工作的合格標準。</p><table><thead><tr><th>區域</th><th>工作</th><th>負責學生</th><th>檢查細項</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+            }
+            const days = Array.from({length:20},(_,i)=>`<th><span>__/__</span><small>${i+1}</small></th>`).join('');
+            const rows = tasks.map(t => `<tr><td>${escHtml(t.name)}<br><b>${escHtml(t.assigned.join('、'))}</b></td>${Array(20).fill('<td></td>').join('')}</tr>`).join('');
+            return `<section class="daily"><h1>${escHtml(checker)}｜20天整潔檢核表</h1><p>日期自行填寫；合格打 ✓，需要改善打 ✗。檢查標準依「學習細項版」。</p><table><thead><tr><th class="job">工作／負責學生</th>${days}</tr></thead><tbody>${rows}</tbody></table></section>`;
+        }).join('');
+        return `<!doctype html><html><head><meta charset="utf-8"><title>股長整潔檢核表</title><style>@page{size:A4 landscape;margin:7mm}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fffdf8;color:#2f3d37;font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif}section{page-break-after:always;break-after:page}section:last-child{page-break-after:auto;break-after:auto}h1{text-align:center;font-size:20px;margin:0 0 4px;color:#35584c;letter-spacing:.05em}h1:after{content:"";display:block;width:46px;height:3px;background:#d7b66f;border-radius:3px;margin:4px auto 0}p{text-align:center;font-size:10.5px;margin:0 0 8px;color:#6c7772}table{border-collapse:separate;border-spacing:0;width:100%;table-layout:fixed;border:1px solid #9fb5ac;border-radius:9px;overflow:hidden;background:#fff}th,td{border-right:1px solid #c7d5cf;border-bottom:1px solid #c7d5cf;padding:5px;text-align:center;vertical-align:middle;font-size:9.6px;line-height:1.35}th:last-child,td:last-child{border-right:0}tbody tr:last-child td{border-bottom:0}thead th{background:#e9f2ee;color:#35584c;font-weight:800}tbody tr:nth-child(even){background:#f8fbf9}.daily th,.daily td{padding:3px;height:29px}.daily .job{width:155px;text-align:left;padding-left:7px}.daily th span{display:block;font-size:8px}.daily th small{font-size:7px;color:#68756f}@media print{button{display:none}table,tr,td,th{break-inside:avoid;page-break-inside:avoid}}</style></head><body>${sections || '<p>尚無可列印的分配資料。</p>'}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+    }
+
+    function printInspection(mode) {
+        const w = window.open('', '_blank');
+        if (!w) { alert('瀏覽器阻擋了列印視窗，請允許此頁面的彈出式視窗。'); return; }
+        w.document.open(); w.document.write(buildInspectionPrintHtml(mode)); w.document.close();
+    }
+
+    function printLunchDuty() {
+        normalizeCleanMeta();
+        const task = getLunchDutyTask();
+        if (!task || !task.assigned.length) { alert('請先分配午餐值日生。'); return; }
+        const rows = lunchDutyRoles(task).map((r,i)=>`<tr><td>第${i+1}位</td><td><b>${escHtml(r.student)}</b></td><td>${escHtml(r.title.replace(/^第\d位｜/,''))}</td><td class="detail">${escHtml(r.detail)}</td></tr>`).join('');
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>每日值日生五人分工</title><style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{font-family:"Microsoft JhengHei",sans-serif;color:#27352f;background:#fffdf8}h1{text-align:center;margin:0 0 5px;font-size:23px;color:#35584c}p{text-align:center;margin:0 0 12px;color:#6b756f;font-size:11px}.tip{background:#fff7df;border:1px solid #e7d29b;border-radius:12px;padding:8px 11px;margin-bottom:10px;font-size:11px;line-height:1.55}table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid #9fb5ac;border-radius:10px;overflow:hidden}th,td{border-right:1px solid #c5d4ce;border-bottom:1px solid #c5d4ce;padding:8px 7px;text-align:center;font-size:11px}th:last-child,td:last-child{border-right:0}tbody tr:last-child td{border-bottom:0}th{background:#e9f2ee;color:#35584c}th:nth-child(1){width:11%}th:nth-child(2){width:18%}th:nth-child(3){width:23%}.detail{text-align:left;line-height:1.7}footer{text-align:center;margin-top:14px;font-size:11px;color:#7b8580}</style></head><body><h1>🌞 每日值日生五人分工表</h1><p>環保股長督導｜每個人有固定責任，也要一起維護共同環境。</p><div class="tip"><b>🍱 搬運原則：</b>第2～5位共同搬運飯、菜、湯、廚餘及水果籃，依當天數量與重量平均分工，不固定誰拿哪一桶；安全優先、彼此協助。<br><b>🧽 黑板原則：</b>第2、3位上午擦黑板，第4、5位下午擦黑板；若板擦太髒，順手協助清理板擦。</div><table><thead><tr><th>順位</th><th>學生</th><th>主要任務</th><th>工作內容</th></tr></thead><tbody>${rows}</tbody></table><footer>分工有負責，共同環境也一起維護。完成後由環保股長確認，需要改善時請原負責同學完成，不由股長代做。</footer><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+        const w=window.open('','_blank'); if(!w){alert('瀏覽器阻擋了列印視窗，請允許彈出式視窗。');return;} w.document.open();w.document.write(html);w.document.close();
+    }
+
+    function printRoleDuties() {
+        const groups = ['班級幹部','科目小老師'];
+        const sections = groups.map(group => {
+            const tasks = officerTasks.filter(t => t.category === group);
+            if (!tasks.length) return '';
+            const cards = tasks.map(t => {
+                const assigned = (t.assigned || []).join('、') || '待分配';
+                const duties = roleDutySummary(t);
+                const dutyHtml = duties.length ? duties.map(x => `<li>${escHtml(x)}</li>`).join('') : '<li>目前尚未設定詳細職責。</li>';
+                return `<article class="role-card"><div class="role-head"><div><b>${escHtml(t.name)}</b><span>${escHtml(assigned)}</span></div></div><ul>${dutyHtml}</ul></article>`;
+            }).join('');
+            return `<section><h1>${group === '班級幹部' ? '班級幹部職責說明' : '各科小老師職責與任務'}</h1><div class="cards">${cards}</div></section>`;
+        }).join('');
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>701幹部與小老師職責說明</title><style>
+            @page{size:A4 portrait;margin:9mm}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fffdf8;color:#2c3b35;font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif}
+            section{break-after:page}section:last-child{break-after:auto}h1{text-align:center;font-size:21px;margin:0 0 9px;color:#35584c;letter-spacing:.06em}h1:after{content:"";display:block;width:48px;height:3px;background:#d7b66f;border-radius:3px;margin:5px auto 0}.cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+            .role-card{background:#fff;border:1px solid #cbdcd4;border-radius:12px;padding:7px 10px;break-inside:avoid;box-shadow:0 1px 0 rgba(53,88,76,.05)}.role-head{padding:1px 0 5px;margin-bottom:4px;border-bottom:1px solid #e2ece7}.role-head b{font-size:13.5px;color:#263f36}.role-head span{float:right;font-size:10.5px;color:#65766f;background:#f2f7f4;border-radius:10px;padding:1px 6px}
+            ul{margin:0;padding-left:17px}li{font-size:9.8px;line-height:1.42;margin:1px 0}section:nth-of-type(2) .role-card{border-color:#d8d7e7}section:nth-of-type(2) h1{color:#4f5574}@media print{.role-card{page-break-inside:avoid}}
+        </style></head><body>${sections}<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+        const w=window.open('','_blank'); if(!w){alert('瀏覽器阻擋了列印視窗，請允許彈出式視窗。');return;} w.document.open();w.document.write(html);w.document.close();
+    }
+
+    function printReport(mode) {
+        // 列印結果使用獨立文件，不直接列印操作介面，避免 grid/flex、說明文字與按鈕影響紙本排版。
+        const officerRows = officerTasks.map(t => {
+            const assigned = (t.assigned || []).join('、') || '—';
+            const substitute = (t.substitute || []).join('、') || '—';
+            return `<tr><td>${escHtml(t.category)}</td><td>${escHtml(t.name)}</td><td>${escHtml(assigned)}</td><td>${escHtml(substitute)}</td></tr>`;
+        }).join('');
+
+        const cleanRows = cleanTasks.map(t => {
+            const assigned = (t.assigned || []).join('、') || '—';
+            const substitute = (t.substitute || []).join('、') || '—';
+            return `<tr><td>${escHtml(t.category)}</td><td>${escHtml(t.name)}</td><td>${escHtml(assigned)}</td><td>${escHtml(substitute)}</td></tr>`;
+        }).join('');
+
+        const officerSection = `<section><h1>班級幹部與小老師分配表</h1><table><thead><tr><th class="cat">類別</th><th class="job">職務</th><th>正職座號／姓名</th><th>職務代理人</th></tr></thead><tbody>${officerRows}</tbody></table></section>`;
+        const cleanSection = `<section><h1>掃地工作分配表</h1><table><thead><tr><th class="cat">區域</th><th class="job">工作</th><th>正職座號／姓名</th><th>職務代理人</th></tr></thead><tbody>${cleanRows}</tbody></table></section>`;
+
+        let content = officerSection;
+        if (mode === 'clean') content = cleanSection;
+        if (mode === 'all') content = officerSection + cleanSection;
+
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>701班級任務分配表</title><style>
+            @page{size:A4 landscape;margin:5mm}
+            *{box-sizing:border-box}
+            html,body{margin:0;padding:0;background:#fffdf8;color:#2f3d37;font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif}
+            section{width:100%;min-height:190mm;page-break-after:always;break-after:page;display:flex;flex-direction:column}
+            section:last-child{page-break-after:auto;break-after:auto}
+            h1{font-size:17px;text-align:center;margin:0 0 5px;font-weight:800;letter-spacing:.06em;color:#35584c}
+            h1:after{content:"";display:block;width:44px;height:3px;background:#d7b66f;border-radius:3px;margin:4px auto 0}
+            table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:9.5px;border:1px solid #9fb5ac;border-radius:8px;overflow:hidden;background:#fff}
+            th,td{border-right:1px solid #c7d5cf;border-bottom:1px solid #c7d5cf;padding:3px 6px;line-height:1.18;vertical-align:middle;text-align:left;word-break:keep-all;overflow-wrap:anywhere;white-space:normal}
+            th:last-child,td:last-child{border-right:0}tbody tr:last-child td{border-bottom:0}
+            th{background:#e9f2ee;font-weight:800;color:#35584c;font-size:9.7px;height:22px}
+            tbody tr:nth-child(even){background:#f8fbf9}
+            .cat{width:14%}.job{width:26%}th:nth-child(3),td:nth-child(3){width:30%}th:nth-child(4),td:nth-child(4){width:30%}
+            @media print{html,body{width:auto;height:auto;overflow:visible}table,tr,td,th{break-inside:avoid;page-break-inside:avoid}}
+        </style></head><body>${content}<script>
+        function fitTables(){document.querySelectorAll('section').forEach(sec=>{const table=sec.querySelector('table');if(!table)return;const rows=table.tBodies[0]?.rows.length||1;const pagePx=718;const head=sec.querySelector('h1')?.getBoundingClientRect().height||30;const th=table.tHead?.getBoundingClientRect().height||24;const available=Math.max(360,pagePx-head-th-12);const target=Math.max(20,Math.min(29,available/rows));table.querySelectorAll('tbody tr').forEach(r=>r.style.height=target+'px');});}
+        window.onload=()=>{fitTables();setTimeout(()=>window.print(),300)};<\/script></body></html>`;
+
+        const w = window.open('', '_blank');
+        if (!w) { alert('瀏覽器阻擋了列印視窗，請允許彈出式視窗。'); return; }
+        w.document.open(); w.document.write(html); w.document.close();
     }
 
     function renderAll() { 
@@ -1535,7 +1842,9 @@
         renderRules();
     }
 
+    loadSystemState();
     renderAll();
+    window.addEventListener('beforeunload', saveSystemState);
 </script>
 
 </body>
