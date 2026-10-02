@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新生開學表單與繳交資料檢核系統 (單機離線版)</title>
+  <!-- Tailwind CSS CDN (若有網路會加載，若離線則由下方內建完整樣式確保排版完美) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS CDN (離線時自動退回內建 CSV 匯入匯出) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 離線基礎防護樣式 (確保無網路時排版不跑版) */
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    /* 列印專屬排版優化 */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 8mm 10mm 8mm;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 10pt;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .print-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      .print-table th, .print-table td {
+        border: 1px solid #475569 !important;
+        padding: 5px 6px !important;
+        font-size: 9.5pt !important;
+      }
+      .print-table th {
+        background-color: #f1f5f9 !important;
+        color: #0f172a !important;
+      }
+      .card-box {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid;
+      }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 頂部導航列 (螢幕專用) -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index.html" class="btn-action bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm" style="text-decoration:none">⬅️ 返回大廳四</a>
+        <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-sm font-bold text-lg">
+          ✓
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-wide">新生開學表單與繳交資料檢核系統</h1>
+          <p class="text-xs text-emerald-400 flex items-center space-x-1">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>單機離線版本 · 資料自動保存於本機 (LocalStorage)</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 工具按鈕組 -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <label class="btn-action bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm">
+          <span>📥 匯入檔案</span>
+          <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+        </label>
+
+        <button onclick="exportData()" class="btn-action bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm">
+          <span>📤 匯出備份</span>
+        </button>
+
+        <button onclick="window.print()" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm shadow-sm">
+          <span>🖨️ 列印清單</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 列印專用抬頭 (僅列印時顯示) -->
+  <div class="hidden print-only mb-3">
+    <div class="text-center border-b-2 border-slate-800 pb-2">
+      <h1 class="text-2xl font-bold tracking-wider text-slate-900" id="printSchoolTitle">115學年度 第 1 學期 新生開學各項表單與繳交資料檢核表</h1>
+      <div class="flex justify-between items-center text-xs mt-2 text-slate-700 font-medium">
+        <span id="printClassTeacher">班級：707 班　導師：林玲君 老師　全班人數：26 人</span>
+        <span>列印日期：<span id="printDate"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主容器 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+    <!-- 班級資訊與統計數據看板 (螢幕顯示) -->
+    <div class="no-print bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+        <!-- 班級導師基本資料設定 -->
+        <div class="md:col-span-2 flex flex-wrap sm:flex-nowrap gap-3 items-center">
+          <div class="flex-1 min-w-[130px]">
+            <label class="block text-xs font-semibold text-slate-500 mb-1">班級名稱</label>
+            <input type="text" id="classInput" placeholder="例：701 班" value="701 班" oninput="saveMeta()" class="w-full bg-slate-50 border border-slate-300 focus:border-emerald-500 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-800 outline-none">
+          </div>
+          <div class="flex-1 min-w-[130px]">
+            <label class="block text-xs font-semibold text-slate-500 mb-1">導師姓名</label>
+            <input type="text" id="teacherInput" placeholder="導師姓名" value="請輸入 老師" oninput="saveMeta()" class="w-full bg-slate-50 border border-slate-300 focus:border-emerald-500 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-800 outline-none">
+          </div>
+          <div class="w-24">
+            <label class="block text-xs font-semibold text-slate-500 mb-1">全班人數</label>
+            <input type="number" id="studentCountInput" placeholder="26" value="26" oninput="saveMeta()" class="w-full bg-slate-50 border border-slate-300 focus:border-emerald-500 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-800 outline-none">
+          </div>
+        </div>
+
+        <!-- 數據統計區 -->
+        <div class="md:col-span-2 grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-50 border border-slate-200/70 rounded-lg p-2">
+            <span class="text-xs text-slate-500 font-medium block">總項目數</span>
+            <span id="totalCount" class="text-base sm:text-lg font-bold text-slate-800">0</span>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-2">
+            <span class="text-xs text-emerald-700 font-medium block">已完成 / 繳清</span>
+            <span id="completedCount" class="text-base sm:text-lg font-bold text-emerald-700">0</span>
+          </div>
+          <div class="bg-amber-50 border border-amber-100 rounded-lg p-2">
+            <span class="text-xs text-amber-700 font-medium block">待處理 / 進行中</span>
+            <span id="pendingCount" class="text-base sm:text-lg font-bold text-amber-700">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 搜尋與篩選工具列 -->
+    <div class="no-print flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2 flex-1">
+        <input type="text" id="searchInput" placeholder="🔍 搜尋項目、處室或說明..." oninput="renderTable()" class="w-full sm:w-64 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:border-emerald-500 outline-none">
+
+        <!-- 動態類別篩選 -->
+        <select id="categoryFilter" onchange="renderTable()" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:border-emerald-500 outline-none">
+          <option value="ALL">全部類別</option>
+        </select>
+
+        <select id="statusFilter" onchange="renderTable()" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:border-emerald-500 outline-none">
+          <option value="ALL">全部狀態</option>
+          <option value="PENDING">僅顯示待處理</option>
+          <option value="DONE">僅顯示已完成</option>
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-semibold flex items-center space-x-1 shadow-sm transition">
+          <span>＋ 新增項目</span>
+        </button>
+        <button onclick="resetToDefault()" title="還原預設的 16 項表單清單" class="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-lg text-sm transition">
+          ↺ 重置
+        </button>
+      </div>
+    </div>
+
+    <!-- 檢核清單表格 -->
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse print-table" id="mainTable">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+              <th class="py-3 px-3 w-12 text-center">狀態</th>
+              <th class="py-3 px-3 w-32">截止 / 日期</th>
+              <th class="py-3 px-4 min-w-[180px]">項目名稱</th>
+              <th class="py-3 px-3 w-28">類別</th>
+              <th class="py-3 px-4 min-w-[220px]">內容說明 / 需附證件 / 名額</th>
+              <th class="py-3 px-3 w-36">承辦／繳交處室</th>
+              <th class="py-3 px-3 w-24 text-center">份數 / 進度</th>
+              <th class="py-3 px-3 w-20 text-center no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-200 text-sm text-slate-800">
+            <!-- 動態資料列 -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="hidden py-12 text-center">
+        <p class="text-slate-500 font-medium">沒有符合條件的檢核項目</p>
+      </div>
+    </div>
+
+    <!-- 導師備註欄 (可列印) -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 card-box">
+      <h3 class="text-sm font-bold text-slate-800 flex items-center space-x-1.5 mb-2">
+        <span>📝 導師備註與催繳提醒區</span>
+      </h3>
+      <textarea id="memoNotes" rows="3" oninput="saveMeta()" placeholder="可在此記錄缺交座號名單、處室特定分機或注意事項..." class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 outline-none resize-y"></textarea>
+    </div>
+
+  </main>
+
+  <!-- 新增 / 編輯彈出視窗 -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-800">新增檢核項目</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <form id="itemForm" onsubmit="handleFormSubmit(event)" class="space-y-4 text-sm">
+        <input type="hidden" id="editIndex" value="-1">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">項目名稱 <span class="text-red-500">*</span></label>
+          <input type="text" id="formTitle" required placeholder="例：學習扶助實施方案調查表" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">截止 / 辦理日期</label>
+            <input type="text" id="formDueDate" placeholder="例：9/2 (三) 15:00 前" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">類別</label>
+            <select id="formCategory" onchange="handleCategorySelectChange(this)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none">
+              <!-- 動態生成選項 -->
+            </select>
+            <input type="text" id="customCategoryInput" placeholder="請輸入新類別名稱..." class="hidden mt-2 w-full bg-emerald-50/50 border border-emerald-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">承辦／繳交處室</label>
+            <input type="text" id="formDepartment" placeholder="例：教務處 教學組" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">份數 / 進度註記</label>
+            <input type="text" id="formProgress" placeholder="例：26 份 或 待收" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">說明 / 檢附證件 / 名額要求</label>
+          <textarea id="formDescription" rows="2" placeholder="詳細說明、需檢附之低收證明、同戶就讀證明等..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:border-emerald-500 outline-none"></textarea>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-2">
+          <input type="checkbox" id="formDone" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+          <label for="formDone" class="text-xs font-medium text-slate-700 select-none">標記為已處理 / 已全數收齊</label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">取消</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition shadow-sm">儲存項目</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 頁尾宣告 -->
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400 no-print">
+    新生開學表單收發檢核系統 · 純單機離線版（隨開即用）
+  </footer>
+
+  <!-- 核心邏輯 -->
+  <script>
+    const DEFAULT_ITEMS = [
+      { done: false, dueDate: "開學當日", title: "午餐用餐說明與調查", category: "當日發放", description: "說明用餐規範、訂餐/自備調查。請學生張貼於聯絡簿，家長簽名勾選", department: "學務處 午餐秘書", progress: "全班張貼" },
+      { done: false, dueDate: "開學當日", title: "學生肖像權同意書", category: "當日發放", description: "班級活動照片、作品公開與校園影像紀錄授權，家長簽署後收回", department: "導師留存 / 教務處", progress: "待收 26 份" },
+      { done: false, dueDate: "開學當日", title: "親師溝通家長調查表", category: "當日發放", description: "調查家長聯絡偏好、家庭期待與緊急聯絡方式，收回後導師留存建立檔案", department: "導師自存", progress: "待收 26 份" },
+      { done: false, dueDate: "開學當日", title: "桃園鈣健康申辦表", category: "當日發放", description: "桃園市學生乳品／鈣質營養補助計畫申請意願調查，帶回填寫後回收", department: "學務處 體衛組", progress: "待收回" },
+      { done: false, dueDate: "9/2 (三) 15:00 前", title: "班級領用書籍短缺表", category: "教科書籍", description: "領書後核對全班數量，若有缺書立即填單回報設備組進行補發", department: "教務處 設備組", progress: "待核對" },
+      { done: false, dueDate: "9/2 (三) 放學前", title: "學習扶助實施方案調查表", category: "申請補助", description: "國小學力需補救或有意願參加課後學習扶助之學生（依意願／成績推薦）", department: "教務處 教學組", progress: "待收回" },
+      { done: false, dueDate: "9/3 (四) 12:25", title: "【活動】班級幹部訓練", category: "幹部活動", description: "集合全班各項班級幹部至【1樓穿堂】集合培訓，提醒準時出席", department: "學務處 訓育/生輔組", progress: "幹部集合" },
+      { done: false, dueDate: "9/3 (四) 放學前", title: "第八節課後輔導意願調查表", category: "申請補助", description: "調查學生參加第八節課後輔導課之意願與繳費通知", department: "教務處 教學組", progress: "待收 26 份" },
+      { done: false, dueDate: "9/3 (四) 放學前", title: "愛心早餐申請調查表", category: "申請補助", description: "清寒、家庭突遭變故、無力支付早餐學生（附證明或導師推薦表）", department: "學務處 生服/體衛組", progress: "個案申請" },
+      { done: false, dueDate: "9/4 (五) 放學前", title: "經濟弱勢午餐與第八節輔導費申請", category: "申請補助", description: "低收、中低收、突遭變故家庭申請減免（需附公文證明影本）", department: "學務處午餐 / 教務處", progress: "個案申請" },
+      { done: false, dueDate: "9/4 (五) 放學前", title: "環境衛生評分員報名表", category: "幹部活動", description: "每班選派 4 名認真負責學生擔任評分員（2 男 2 女）", department: "學務處 衛生組", progress: "需填 4 名" },
+      { done: false, dueDate: "9/4 (五) 前 (開學週)", title: "特需助理人員申請調查表", category: "申請補助", description: "鑑輔會核定通過、需專人協助生活或學習之特殊需求學生（附證明文件）", department: "輔導室 特教組", progress: "個案申請" },
+      { done: false, dueDate: "第一週結束前", title: "教育優先區指標界定調查表", category: "申請補助", description: "原住民、低收、單親/隔代、新住民子女等指標家庭普查建檔", department: "輔導室 / 教務處", progress: "全班普查" },
+      { done: false, dueDate: "9/10 (四) 15:00 前", title: "多餘書籍退回設備組", category: "教科書籍", description: "彙整班上未發出、多領或轉出之教科書，送回設備組清點", department: "教務處 設備組", progress: "待退還" },
+      { done: false, dueDate: "9/14 (一) 放學前", title: "家長會費減免調查表", category: "申請補助", description: "同戶兄弟姊妹就讀減免、低收減免（需檢附戶口名簿或證明）", department: "總務處 出納組", progress: "個案申請" },
+      { done: false, dueDate: "9/17 (四) 中午", title: "【活動】志願服務學習時數登錄員訓練", category: "幹部活動", description: "每班選派 2 名學生參加中午研習，負責班級志工時數登錄", department: "學務處 訓育組", progress: "需填 2 名" }
+    ];
+
+    let checklist = [];
+    let knownCategories = ["當日發放", "申請補助", "幹部活動", "教科書籍", "導師自辦", "其他項目"];
+
+    const COLOR_PALETTES = [
+      "bg-amber-50 text-amber-700 border-amber-200",
+      "bg-blue-50 text-blue-700 border-blue-200",
+      "bg-purple-50 text-purple-700 border-purple-200",
+      "bg-emerald-50 text-emerald-700 border-emerald-200",
+      "bg-rose-50 text-rose-700 border-rose-200",
+      "bg-cyan-50 text-cyan-700 border-cyan-200",
+      "bg-indigo-50 text-indigo-700 border-indigo-200",
+      "bg-orange-50 text-orange-700 border-orange-200",
+      "bg-teal-50 text-teal-700 border-teal-200"
+    ];
+
+    function getCategoryBadgeClass(category) {
+      if (category === "申請補助") return "bg-amber-50 text-amber-700 border-amber-200";
+      if (category === "當日發放") return "bg-blue-50 text-blue-700 border-blue-200";
+      if (category === "幹部活動") return "bg-purple-50 text-purple-700 border-purple-200";
+      if (category === "教科書籍") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      
+      let hash = 0;
+      for (let i = 0; i < category.length; i++) {
+        hash = category.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return COLOR_PALETTES[Math.abs(hash) % COLOR_PALETTES.length];
+    }
+
+    function initApp() {
+      loadData();
+      loadMeta();
+      updatePrintDate();
+      syncCategoryOptions();
+      renderTable();
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem("offline_checklist_items");
+      if (saved) {
+        try { checklist = JSON.parse(saved); }
+        catch(e) { checklist = [...DEFAULT_ITEMS]; }
+      } else {
+        checklist = [...DEFAULT_ITEMS];
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem("offline_checklist_items", JSON.stringify(checklist));
+      renderTable();
+    }
+
+    function loadMeta() {
+      document.getElementById("classInput").value = localStorage.getItem("offline_class") || "707 班";
+      document.getElementById("teacherInput").value = localStorage.getItem("offline_teacher") || "林玲君 老師";
+      document.getElementById("studentCountInput").value = localStorage.getItem("offline_students") || "26";
+      document.getElementById("memoNotes").value = localStorage.getItem("offline_notes") || "";
+      updatePrintHeaders();
+    }
+
+    function saveMeta() {
+      localStorage.setItem("offline_class", document.getElementById("classInput").value);
+      localStorage.setItem("offline_teacher", document.getElementById("teacherInput").value);
+      localStorage.setItem("offline_students", document.getElementById("studentCountInput").value);
+      localStorage.setItem("offline_notes", document.getElementById("memoNotes").value);
+      updatePrintHeaders();
+    }
+
+    function updatePrintHeaders() {
+      const cls = document.getElementById("classInput").value || "707 班";
+      const tch = document.getElementById("teacherInput").value || "林玲君 老師";
+      const cnt = document.getElementById("studentCountInput").value || "26";
+      document.getElementById("printClassTeacher").innerText = `班級：${cls}　導師：${tch}　全班人數：${cnt} 人`;
+    }
+
+    function updatePrintDate() {
+      const now = new Date();
+      document.getElementById("printDate").innerText = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`;
+    }
+
+    function syncCategoryOptions() {
+      checklist.forEach(item => {
+        if (item.category && !knownCategories.includes(item.category)) {
+          knownCategories.push(item.category);
+        }
+      });
+
+      const filterSelect = document.getElementById("categoryFilter");
+      const currentVal = filterSelect.value;
+      filterSelect.innerHTML = `<option value="ALL">全部類別</option>`;
+      knownCategories.forEach(cat => {
+        filterSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      filterSelect.value = currentVal || "ALL";
+
+      const formSelect = document.getElementById("formCategory");
+      formSelect.innerHTML = "";
+      knownCategories.forEach(cat => {
+        formSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      formSelect.innerHTML += `<option value="__NEW__" class="font-bold text-emerald-700 bg-emerald-50">+ 自訂新類別...</option>`;
+    }
+
+    function handleCategorySelectChange(select) {
+      const customInput = document.getElementById("customCategoryInput");
+      if (select.value === "__NEW__") {
+        customInput.classList.remove("hidden");
+        customInput.focus();
+      } else {
+        customInput.classList.add("hidden");
+        customInput.value = "";
+      }
+    }
+
+    function renderTable() {
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+      const catFilter = document.getElementById("categoryFilter").value;
+      const statusFilter = document.getElementById("statusFilter").value;
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      let total = checklist.length;
+      let completed = checklist.filter(i => i.done).length;
+      document.getElementById("totalCount").innerText = total;
+      document.getElementById("completedCount").innerText = completed;
+      document.getElementById("pendingCount").innerText = total - completed;
+
+      const filtered = checklist.filter((item) => {
+        const matchesSearch = item.title.toLowerCase().includes(searchTerm) ||
+                              item.description.toLowerCase().includes(searchTerm) ||
+                              item.department.toLowerCase().includes(searchTerm) ||
+                              item.dueDate.toLowerCase().includes(searchTerm);
+        const matchesCat = catFilter === "ALL" || item.category === catFilter;
+        const matchesStatus = statusFilter === "ALL" || 
+                              (statusFilter === "DONE" && item.done) ||
+                              (statusFilter === "PENDING" && !item.done);
+        return matchesSearch && matchesCat && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById("emptyState").classList.remove("hidden");
+      } else {
+        document.getElementById("emptyState").classList.add("hidden");
+      }
+
+      filtered.forEach((item) => {
+        const originalIndex = checklist.indexOf(item);
+        const tr = document.createElement("tr");
+        tr.className = `hover:bg-slate-50/80 transition ${item.done ? 'bg-slate-50/50 text-slate-400' : ''}`;
+
+        const badgeClass = getCategoryBadgeClass(item.category || "其他項目");
+        const isUrgent = item.dueDate.includes('9/2') || item.dueDate.includes('9/3') || item.dueDate.includes('9/4');
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 text-center">
+            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleDone(${originalIndex})" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+          </td>
+          <td class="py-3 px-3 font-semibold text-xs sm:text-sm ${isUrgent ? 'text-red-600 font-bold' : 'text-slate-700'}">
+            ${item.dueDate || "-"}
+          </td>
+          <td class="py-3 px-4 font-semibold text-slate-800 ${item.done ? 'line-through text-slate-400' : ''}">
+            ${item.title}
+          </td>
+          <td class="py-3 px-3">
+            <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border ${badgeClass}">
+              ${item.category}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-xs text-slate-600 leading-relaxed">
+            ${item.description || "-"}
+          </td>
+          <td class="py-3 px-3 text-xs font-medium text-slate-700">
+            ${item.department || "-"}
+          </td>
+          <td class="py-3 px-3 text-center font-mono text-xs">
+            <span class="inline-block bg-slate-100 px-2 py-1 rounded-md text-slate-700 border border-slate-200 font-medium">
+              ${item.progress || "-"}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-center no-print">
+            <div class="flex items-center justify-center space-x-1.5">
+              <button onclick="editItem(${originalIndex})" title="編輯" class="p-1 hover:bg-slate-200 rounded text-slate-600 transition">✏️</button>
+              <button onclick="deleteItem(${originalIndex})" title="刪除" class="p-1 hover:bg-red-100 rounded text-red-500 transition">🗑️</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleDone(index) {
+      checklist[index].done = !checklist[index].done;
+      saveData();
+    }
+
+    function deleteItem(index) {
+      if (confirm(`確定要刪除「${checklist[index].title}」嗎？`)) {
+        checklist.splice(index, 1);
+        syncCategoryOptions();
+        saveData();
+      }
+    }
+
+    function openModal(editIdx = -1) {
+      syncCategoryOptions();
+      document.getElementById("editIndex").value = editIdx;
+      document.getElementById("customCategoryInput").classList.add("hidden");
+      document.getElementById("customCategoryInput").value = "";
+
+      if (editIdx >= 0) {
+        const item = checklist[editIdx];
+        document.getElementById("modalTitle").innerText = "編輯檢核項目";
+        document.getElementById("formTitle").value = item.title;
+        document.getElementById("formDueDate").value = item.dueDate;
+        document.getElementById("formCategory").value = item.category;
+        document.getElementById("formDepartment").value = item.department;
+        document.getElementById("formProgress").value = item.progress;
+        document.getElementById("formDescription").value = item.description;
+        document.getElementById("formDone").checked = item.done;
+      } else {
+        document.getElementById("modalTitle").innerText = "新增檢核項目";
+        document.getElementById("itemForm").reset();
+        document.getElementById("editIndex").value = -1;
+      }
+      document.getElementById("itemModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("itemModal").classList.add("hidden");
+    }
+
+    function editItem(index) { openModal(index); }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const idx = parseInt(document.getElementById("editIndex").value);
+      let category = document.getElementById("formCategory").value;
+      if (category === "__NEW__") {
+        const customVal = document.getElementById("customCategoryInput").value.trim();
+        category = customVal || "其他項目";
+        if (!knownCategories.includes(category)) {
+          knownCategories.push(category);
+        }
+      }
+
+      const newItem = {
+        title: document.getElementById("formTitle").value.trim(),
+        dueDate: document.getElementById("formDueDate").value.trim(),
+        category: category,
+        department: document.getElementById("formDepartment").value.trim(),
+        progress: document.getElementById("formProgress").value.trim(),
+        description: document.getElementById("formDescription").value.trim(),
+        done: document.getElementById("formDone").checked
+      };
+
+      if (idx >= 0) checklist[idx] = newItem;
+      else checklist.push(newItem);
+
+      closeModal();
+      syncCategoryOptions();
+      saveData();
+    }
+
+    function resetToDefault() {
+      if (confirm("是否要重置並還原為開學預設的 16 項表單清單？")) {
+        checklist = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+        syncCategoryOptions();
+        saveData();
+      }
+    }
+
+    // 支援 Excel 或 純離線 CSV 匯出
+    function exportData() {
+      const className = document.getElementById("classInput").value || "707班";
+      
+      // 若有 SheetJS 庫則匯出 xlsx
+      if (typeof XLSX !== 'undefined') {
+        const dataToExport = checklist.map((item, i) => ({
+          "編號": i + 1,
+          "狀態": item.done ? "已完成" : "待處理",
+          "截止日期": item.dueDate,
+          "項目名稱": item.title,
+          "類別": item.category,
+          "說明與需附證件": item.description,
+          "承辦處室": item.department,
+          "份數與進度": item.progress
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "新生開學檢核清單");
+        XLSX.writeFile(wb, `${className}_開學表單檢核表.xlsx`);
+      } else {
+        // 離線純 CSV 備援匯出
+        let csvContent = "\uFEFF編號,狀態,截止日期,項目名稱,類別,說明與需附證件,承辦處室,份數與進度\n";
+        checklist.forEach((item, i) => {
+          csvContent += `"${i+1}","${item.done ? '已完成':'待處理'}","${item.dueDate}","${item.title}","${item.category}","${item.description}","${item.department}","${item.progress}"\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${className}_開學表單檢核表.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+
+    // 檔案匯入處理
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          if (typeof XLSX !== 'undefined') {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+            const importedItems = jsonData.map(row => ({
+              done: (row["狀態"] === "已完成" || row["已完成"] === true),
+              dueDate: row["截止日期"] || row["日期"] || "開學初",
+              title: row["項目名稱"] || row["項目"] || "未命名項目",
+              category: row["類別"] || "其他項目",
+              description: row["說明與需附證件"] || row["說明"] || "",
+              department: row["承辦處室"] || row["處室"] || "",
+              progress: row["份數與進度"] || row["進度"] || ""
+            }));
+
+            if (confirm(`成功解析 ${importedItems.length} 項！按「確定」覆蓋清單，按「取消」附加在後面。`)) {
+              checklist = importedItems;
+            } else {
+              checklist = checklist.concat(importedItems);
+            }
+          }
+          syncCategoryOptions();
+          saveData();
+          alert("匯入成功！");
+        } catch (err) {
+          alert("讀取失敗，請確認檔案格式。" + err.message);
+        }
+        e.target.value = "";
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>

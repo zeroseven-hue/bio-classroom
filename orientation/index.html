@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎒 七年級新生始業輔導管理面板 🎒</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; transition: background-color 0.3s ease; }
+        .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+        
+        .lab-board-dark {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .lab-board-light {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 10px; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="fixed top-3 left-3 z-50 bg-slate-800 text-sky-400 hover:text-white px-3 py-1.5 rounded-lg text-sm font-bold border border-slate-700 shadow-lg flex items-center gap-1.5 transition-all" style="text-decoration:none">⬅️ 返回大廳四 (導師神器)</a>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ name, className = "", size = 20 }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (iconRef.current && window.lucide) {
+                    iconRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" style="width:${size}px; height:${size}px"></i>`;
+                    window.lucide.createIcons();
+                }
+            }, [name, className, size]);
+            return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
+        };
+
+        const initialSchedules = {
+            "2026-08-05": [
+                { time: "07:45~08:10", activity: "相見歡（報到集合）", location: "川堂", host: "學務處" },
+                { time: "08:15~09:00", activity: "導師時間（資料蒐集、相關事項）", location: "各班教室", host: "各班導師" },
+                { time: "09:10~09:30", activity: "開訓典禮", location: "視聽教室", host: "學務處" },
+                { time: "09:30~09:55", activity: "行政處室介紹", location: "視聽教室", host: "教務處、學務處" },
+                { time: "10:10~10:55", activity: "行政處室介紹", location: "視聽教室", host: "總務處、輔導室、國小部" },
+                { time: "11:05~12:10", activity: "處室專案宣導（教育會考、志願服務學習、性平、反毒、反霸凌...）", location: "視聽教室", host: "各處室" }
+            ],
+            "2026-08-06": [
+                { time: "07:45~08:00", activity: "相見歡（報到集合）", location: "川堂", host: "學務處" },
+                { time: "08:00~08:15", activity: "校長勉勵", location: "川堂", host: "校長" },
+                { time: "08:15~09:00", activity: "導師時間（資料蒐集、相關事項）", location: "各班教室", host: "各班導師" },
+                { time: "09:10~09:55", activity: "CPR 宣導", location: "視聽教室", host: "學務處" },
+                { time: "10:10~10:55", activity: "交通安全教育", location: "視聽教室", host: "學務處" },
+                { time: "11:05~12:10", activity: "導師時間（資料蒐集、相關事項）", location: "各班教室", host: "各班導師" }
+            ]
+        };
+
+        const initialNotes = {
+            "2026-08-05": "1. 請穿著原國小制服或便服。\n2. 攜帶水壺、餐具及個人文具。\n3. 繳交新生調查表與相關資料。",
+            "2026-08-06": "1. 今日有 CPR 宣導，請穿著方便活動之服裝。\n2. 放學時間為 12:10，請提醒家長接送時間。"
+        };
+
+        const colorThemes = {
+            cyan: { primary: "cyan", text: "text-cyan-500", textDark: "text-cyan-400", bg: "bg-cyan-600", border: "border-cyan-500", lightBg: "bg-cyan-50" },
+            emerald: { primary: "emerald", text: "text-emerald-600", textDark: "text-emerald-400", bg: "bg-emerald-600", border: "border-emerald-500", lightBg: "bg-emerald-50" }
+        };
+
+        function useLocalStorage(key, initialValue) {
+            const [storedValue, setStoredValue] = useState(() => {
+                try {
+                    const item = window.localStorage.getItem(key);
+                    return item ? JSON.parse(item) : initialValue;
+                } catch (error) { return initialValue; }
+            });
+            const setValue = (value) => {
+                const valueToStore = value instanceof Function ? value(storedValue) : value;
+                setStoredValue(valueToStore);
+                window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            };
+            return [storedValue, setValue];
+        }
+
+        function App() {
+            const [viewMode, setViewMode] = useState('both');
+            const [bgTheme, setBgTheme] = useState('dark');
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [isEditingNotes, setIsEditingNotes] = useState(false);
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [viewDateKey, setViewDateKey] = useState("2026-08-05");
+
+            // 右側座位表自選顯示模式 State ('all' 表示所有座位，'col1'~'col6' 表示單排)
+            const [seatingViewFilter, setSeatingViewFilter] = useState('all');
+
+            const [flowFontSize, setFlowFontSize] = useState(16);
+            const [notesFontSize, setNotesFontSize] = useState(18);
+            const [leftWidthPercent, setLeftWidthPercent] = useState(33);
+            const [themeKey, setThemeKey] = useState("cyan");
+
+            const [settings, setSettings] = useLocalStorage('freshman-settings-v9', {
+                totalStudents: 26,
+                classTitle: '桃園市立楊光國民中小學 七年級新生始業輔導',
+                skipIds: '15',
+                studentNamesText: Array.from({length: 26}, (_, i) => `學生${i+1}`).join('\n')
+            });
+
+            const [students, setStudents] = useLocalStorage('freshman-students-v9', []);
+            const [schedules] = useLocalStorage('freshman-schedules-v9', initialSchedules);
+            const [notes, setNotes] = useLocalStorage('freshman-notes-v9', initialNotes);
+
+            const activeTheme = colorThemes[themeKey] || colorThemes.cyan;
+            const isDark = bgTheme === 'dark';
+
+            useEffect(() => {
+                document.body.style.backgroundColor = isDark ? '#0f172a' : '#f8fafc';
+            }, [isDark]);
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                const namesList = settings.studentNamesText.split('\n').map(n => n.trim());
+                const skipSet = new Set(settings.skipIds.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)));
+
+                let currentId = 1;
+                const studentList = [];
+
+                for (let i = 0; i < settings.totalStudents; i++) {
+                    while (skipSet.has(currentId)) { currentId++; }
+                    const id = currentId;
+                    const existing = students.find(s => s.id === id);
+                    const name = namesList[i] || `學生${id}`;
+                    studentList.push({
+                        id,
+                        name,
+                        arrived: existing?.arrived || false,
+                        docsSubmitted: existing?.docsSubmitted || false
+                    });
+                    currentId++;
+                }
+                setStudents(studentList);
+            }, [settings.totalStudents, settings.studentNamesText, settings.skipIds]);
+
+            const toggleArrived = (id) => {
+                setStudents(prev => prev.map(s => s.id === id ? { ...s, arrived: !s.arrived } : s));
+            };
+
+            const toggleDocs = (id) => {
+                setStudents(prev => prev.map(s => s.id === id ? { ...s, docsSubmitted: !s.docsSubmitted } : s));
+            };
+
+            const handleReset = () => {
+                if(confirm('確定要重置所有學生的報到與資料繳交狀態嗎？')) {
+                    setStudents(students.map(s => ({ ...s, arrived: false, docsSubmitted: false })));
+                }
+            };
+
+            const currentScheduleList = schedules[viewDateKey] || [];
+
+            const col1 = students.slice(0, 3);
+            const col2 = students.slice(3, 8);
+            const col3 = students.slice(8, 13);
+            const col4 = students.slice(13, 18);
+            const col5 = students.slice(18, 23);
+            const col6 = students.slice(23);
+
+            const allColumnsMap = [
+                { id: "col6", label: "第六排 (3人)", list: col6 },
+                { id: "col5", label: "第五排 (5人)", list: col5 },
+                { id: "col4", label: "第四排 (5人)", list: col4 },
+                { id: "col3", label: "第三排 (5人)", list: col3 },
+                { id: "col2", label: "第二排 (5人)", list: col2 },
+                { id: "col1", label: "第一排 (3人)", list: col1 },
+            ];
+
+            // 依據選擇過濾顯示的直排
+            const displayedColumns = seatingViewFilter === 'all' 
+                ? allColumnsMap 
+                : allColumnsMap.filter(col => col.id === seatingViewFilter);
+
+            return (
+                <div className={`h-screen w-screen flex flex-col overflow-hidden ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                    {/* 頂部導覽列 */}
+                    <header className={`h-16 border-b px-6 flex items-center justify-between shadow-sm shrink-0 z-50 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                            <button onClick={() => setViewMode('both')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'both' ? (isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900 shadow') : 'text-slate-400'}`}>
+                                <Icon name="layout" /> 全景模式
+                            </button>
+                            <button onClick={() => setViewMode('flow')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'flow' ? (isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900 shadow') : 'text-slate-400'}`}>
+                                <Icon name="calendar" /> 活動流程
+                            </button>
+                            <button onClick={() => setViewMode('seating')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'seating' ? (isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-900 shadow') : 'text-slate-400'}`}>
+                                <Icon name="grid" /> 學生座位表
+                            </button>
+                        </div>
+
+                        {/* 配色與面板動態調整工具 */}
+                        <div className="flex items-center gap-4">
+                            {/* 深淺底色切換 */}
+                            <div className={`flex items-center gap-1 p-1 rounded-xl border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <button onClick={()=>setBgTheme('dark')} className={`px-2.5 py-1 rounded-lg flex items-center gap-1 ${isDark ? 'bg-cyan-600 text-white' : 'text-slate-500'}`}>
+                                    <Icon name="moon" size={14} /> 深色
+                                </button>
+                                <button onClick={()=>setBgTheme('light')} className={`px-2.5 py-1 rounded-lg flex items-center gap-1 ${!isDark ? 'bg-cyan-600 text-white' : 'text-slate-400'}`}>
+                                    <Icon name="sun" size={14} /> 亮白
+                                </button>
+                            </div>
+
+                            {/* 左欄寬度 */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>左欄寬度:</span>
+                                <input type="range" min="20" max="50" value={leftWidthPercent} onChange={(e) => setLeftWidthPercent(parseInt(e.target.value))} className="w-20 cursor-pointer" />
+                                <span className="font-mono-num">{leftWidthPercent}%</span>
+                            </div>
+
+                            {/* 精簡至 2 種主題顏色 */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>顏色:</span>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>setThemeKey('cyan')} className={`w-5 h-5 rounded-full bg-cyan-500 ${themeKey==='cyan'?'ring-2 ring-cyan-400':''}`}></button>
+                                    <button onClick={()=>setThemeKey('emerald')} className={`w-5 h-5 rounded-full bg-emerald-500 ${themeKey==='emerald'?'ring-2 ring-emerald-400':''}`}></button>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleReset} className={`p-2 rounded-lg text-xs font-bold border ${isDark ? 'hover:bg-slate-700 text-slate-400 border-slate-700' : 'hover:bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                    <Icon name="rotate-ccw" size={16} /> 重置
+                                </button>
+                                <button onClick={() => setIsSettingsOpen(true)} className={`px-4 py-2 ${activeTheme.bg} hover:opacity-90 text-white rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow`}>
+                                    <Icon name="edit-3" size={18} /> 名單/設定
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* 主內容區 */}
+                    <main className="flex-1 flex overflow-hidden p-4 gap-4">
+                        
+                        {/* 左側：活動流程區 (1 與 2 各佔 50% 高度) */}
+                        {(viewMode === 'both' || viewMode === 'flow') && (
+                            <section 
+                                className="flex flex-col gap-4 animate-slide-up transition-all duration-150 h-full overflow-hidden" 
+                                style={{ flex: viewMode === 'both' ? `0 0 ${leftWidthPercent}%` : 1 }}
+                            >
+                                {/* 頂部：標題與時間 */}
+                                <div className={`rounded-2xl p-3.5 shadow-lg border flex flex-col gap-2 shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                    <div className={`text-lg font-black ${isDark ? activeTheme.textDark : activeTheme.text} flex items-center gap-2`}>
+                                        <Icon name="graduation-cap" size={22} /> {settings.classTitle}
+                                    </div>
+                                    <div className={`flex items-center justify-between p-2 rounded-xl border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                        <div className="font-mono-num text-lg font-black">{currentTime.toLocaleTimeString('zh-TW', { hour12: false })}</div>
+                                        <div className="text-xs font-bold opacity-70">{currentTime.toLocaleDateString('zh-TW')}</div>
+                                    </div>
+                                </div>
+
+                                {/* 區塊 1：活動流程 */}
+                                <div className={`flex-1 overflow-hidden flex flex-col ${isDark ? 'lab-board-dark' : 'lab-board-light'}`}>
+                                    <div className={`p-3 shrink-0 flex items-center justify-between border-b ${isDark ? 'border-slate-700/50 bg-slate-800/40' : 'border-slate-100 bg-slate-50'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="list-checks" className={isDark ? activeTheme.textDark : activeTheme.text} size={18} />
+                                            <h2 className="text-sm font-black">1. 新生訓練活動流程</h2>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                                <button onClick={()=>setFlowFontSize(Math.max(12, flowFontSize-2))} className="px-1">A-</button>
+                                                <span className="font-mono-num opacity-60">{flowFontSize}</span>
+                                                <button onClick={()=>setFlowFontSize(Math.min(32, flowFontSize+2))} className="px-1">A+</button>
+                                            </div>
+
+                                            <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                                <button onClick={() => setViewDateKey("2026-08-05")} className={`px-2 py-0.5 rounded-lg text-xs font-black ${viewDateKey === "2026-08-05" ? `${activeTheme.bg} text-white` : 'opacity-60'}`}>8/05</button>
+                                                <button onClick={() => setViewDateKey("2026-08-06")} className={`px-2 py-0.5 rounded-lg text-xs font-black ${viewDateKey === "2026-08-06" ? `${activeTheme.bg} text-white` : 'opacity-60'}`}>8/06</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-2.5">
+                                        {currentScheduleList.map((item, idx) => (
+                                            <div key={idx} className={`p-3 rounded-xl border flex flex-col gap-1 ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`} style={{ fontSize: `${flowFontSize}px` }}>
+                                                <div className="flex items-center justify-between">
+                                                    <span className={`font-mono-num text-xs font-black px-2 py-0.5 rounded border ${isDark ? `${activeTheme.textDark} border-slate-600 bg-slate-900` : `${activeTheme.text} border-slate-200 bg-white`}`}>
+                                                        {item.time}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
+                                                        <Icon name="map-pin" size={12} /> {item.location}
+                                                    </span>
+                                                </div>
+                                                <div className="font-black mt-0.5 leading-snug">{item.activity}</div>
+                                                <div className="text-xs opacity-60 text-right">負責：{item.host}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 區塊 2：其他注意事項 */}
+                                <div className={`flex-1 overflow-hidden flex flex-col ${isDark ? 'lab-board-dark' : 'lab-board-light'}`}>
+                                    <div className={`p-3 shrink-0 flex items-center justify-between border-b ${isDark ? 'border-slate-700/50 bg-slate-800/40' : 'border-slate-100 bg-slate-50'}`}>
+                                        <div className="flex items-center gap-2">
+                                            <Icon name="alert-circle" className="text-amber-500" size={18} />
+                                            <h2 className="text-sm font-black">2. 其他注意事項</h2>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                                <button onClick={()=>setNotesFontSize(Math.max(12, notesFontSize-2))} className="px-1">A-</button>
+                                                <span className="font-mono-num opacity-60">{notesFontSize}</span>
+                                                <button onClick={()=>setNotesFontSize(Math.min(32, notesFontSize+2))} className="px-1">A+</button>
+                                            </div>
+
+                                            <button onClick={() => setIsEditingNotes(!isEditingNotes)} className={`px-3 py-0.5 rounded-lg text-xs font-bold border ${isEditingNotes ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500' : isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-200 border-slate-300'}`}>
+                                                {isEditingNotes ? '儲存' : '編輯'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 p-3 overflow-y-auto custom-scrollbar">
+                                        {isEditingNotes ? (
+                                            <textarea 
+                                                className={`w-full h-full p-2.5 rounded-xl border font-medium outline-none resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                                                style={{ fontSize: `${notesFontSize}px` }}
+                                                value={notes[viewDateKey] || ''}
+                                                onChange={(e) => setNotes({ ...notes, [viewDateKey]: e.target.value })}
+                                            />
+                                        ) : (
+                                            <div className="font-bold leading-relaxed whitespace-pre-line" style={{ fontSize: `${notesFontSize}px` }}>
+                                                {notes[viewDateKey] || "尚無注意事項。"}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                            </section>
+                        )}
+
+                        {/* 右側：學生座位表 (支援自選顯示模式) */}
+                        {(viewMode === 'both' || viewMode === 'seating') && (
+                            <section className={`flex flex-col flex-1 h-full overflow-hidden ${isDark ? 'lab-board-dark' : 'lab-board-light'}`}>
+                                
+                                {/* 講台標示與自選顯示模式控制列 */}
+                                <div className={`p-3 border-b shrink-0 flex items-center justify-between ${isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-sm font-bold flex items-center gap-1.5">
+                                            <Icon name="users" size={18} /> 人數：<span className={`${isDark ? activeTheme.textDark : activeTheme.text} font-mono-num font-black text-base`}>{students.length}</span> 位
+                                        </div>
+
+                                        {/* 畫面顯示切換下拉選單 */}
+                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                            <span className="opacity-60">顯示範圍:</span>
+                                            <select 
+                                                value={seatingViewFilter}
+                                                onChange={(e) => setSeatingViewFilter(e.target.value)}
+                                                className={`bg-transparent outline-none cursor-pointer font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}
+                                            >
+                                                <option value="all" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>所有座位 (全班一覽)</option>
+                                                <option value="col1" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第一排 (1~3號)</option>
+                                                <option value="col2" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第二排 (4~8號)</option>
+                                                <option value="col3" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第三排 (9~13號)</option>
+                                                <option value="col4" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第四排 (14~18號)</option>
+                                                <option value="col5" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第五排 (19~23號)</option>
+                                                <option value="col6" className={isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}>僅顯示 第六排 (24~26號)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className={`w-1/3 py-1.5 rounded-xl border text-center font-black tracking-widest text-base ${isDark ? 'bg-slate-700/90 border-slate-600 text-slate-100' : 'bg-white border-slate-200 text-slate-700'}`}>
+                                        黑 板 / 講 台 ( 學生前方 )
+                                    </div>
+
+                                    <div className="flex items-center gap-4 text-xs font-bold">
+                                        <span className="flex items-center gap-1.5 text-emerald-500"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>已報到</span>
+                                        <span className={`flex items-center gap-1.5 ${isDark ? activeTheme.textDark : activeTheme.text}`}><span className={`w-3 h-3 rounded-full ${activeTheme.bg}`}></span>已交資料</span>
+                                    </div>
+                                </div>
+
+                                {/* 直排座位表 (依選擇動態調整網格與卡片大小) */}
+                                <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                                    <div 
+                                        className="grid gap-3 h-full min-w-[300px]"
+                                        style={{ gridTemplateColumns: `repeat(${displayedColumns.length}, minmax(0, 1fr))` }}
+                                    >
+                                        {displayedColumns.map((col, cIdx) => (
+                                            <div key={cIdx} className={`p-2.5 rounded-2xl border flex flex-col gap-3 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'}`}>
+                                                <div className={`text-xs font-black text-center pb-1 border-b ${isDark ? `${activeTheme.textDark} border-slate-800` : `${activeTheme.text} border-slate-200`}`}>
+                                                    {col.label}
+                                                </div>
+                                                
+                                                <div className="flex-1 flex flex-col gap-3">
+                                                    {col.list.map(s => (
+                                                        <div 
+                                                            key={`seat-${s.id}`}
+                                                            className={`rounded-2xl border-2 p-3 flex flex-col justify-between transition-all shadow-sm relative overflow-hidden ${s.arrived ? 'border-emerald-500' : isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                        >
+                                                            <div className="flex items-center justify-between border-b pb-1 border-slate-200/20">
+                                                                <span className={`text-xl font-black font-mono-num ${isDark ? activeTheme.textDark : activeTheme.text}`}>
+                                                                    {s.id}<span className="text-xs font-normal opacity-60">號</span>
+                                                                </span>
+                                                                <button 
+                                                                    onClick={() => toggleArrived(s.id)}
+                                                                    className={`text-xs px-2 py-0.5 rounded-md font-black ${s.arrived ? 'bg-emerald-500 text-white' : isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'}`}
+                                                                >
+                                                                    {s.arrived ? '已到' : '未到'}
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="my-2.5 text-center">
+                                                                <div className="text-xl lg:text-2xl font-black tracking-wide truncate">
+                                                                    {s.name}
+                                                                </div>
+                                                            </div>
+
+                                                            <button 
+                                                                onClick={() => toggleDocs(s.id)}
+                                                                className={`py-1.5 px-2 rounded-lg border text-xs font-bold flex items-center justify-between ${s.docsSubmitted ? `${activeTheme.bg} text-white border-transparent` : isDark ? 'bg-slate-900/60 border-slate-700 opacity-60' : 'bg-slate-100 border-slate-200 opacity-60'}`}
+                                                            >
+                                                                <span>資料繳交</span>
+                                                                <Icon name={s.docsSubmitted ? "check-circle-2" : "circle"} size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+                    </main>
+
+                    {/* 設定 Modal */}
+                    {isSettingsOpen && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                            <div className={`rounded-2xl w-full max-w-xl shadow-2xl flex flex-col border max-h-[90vh] ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+                                <div className="p-5 border-b flex justify-between items-center border-slate-200/20">
+                                    <h3 className={`text-lg font-black flex items-center gap-2 ${isDark ? activeTheme.textDark : activeTheme.text}`}>
+                                        <Icon name="edit-3" /> 輸入學生名單與設定
+                                    </h3>
+                                    <button onClick={() => setIsSettingsOpen(false)} className="w-8 h-8 rounded-lg flex items-center justify-center opacity-60 hover:opacity-100">
+                                        <Icon name="x" size={20} />
+                                    </button>
+                                </div>
+                                
+                                <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs">
+                                    <div>
+                                        <label className="block font-black mb-1.5 text-sm">班級 / 標題名稱</label>
+                                        <input type="text" className={`w-full p-2.5 rounded-xl border outline-none text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`} value={settings.classTitle} onChange={e => setSettings({...settings, classTitle: e.target.value})} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block font-black mb-1.5 text-sm">學生總人數</label>
+                                            <input type="number" min="1" max="60" className={`w-full p-2.5 rounded-xl border font-mono-num outline-none text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`} value={settings.totalStudents} onChange={e => setSettings({...settings, totalStudents: parseInt(e.target.value) || 26})} />
+                                        </div>
+                                        <div>
+                                            <label className="block font-black text-amber-500 mb-1.5 text-sm">跳過/缺號座號 (逗號隔開)</label>
+                                            <input type="text" className={`w-full p-2.5 rounded-xl border font-mono-num outline-none text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`} placeholder="例如: 15" value={settings.skipIds} onChange={e => setSettings({...settings, skipIds: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <label className="block font-black text-sm">學生姓名名單 (按座號順序，每行一位)</label>
+                                            <span className="opacity-60 text-[11px]">按 Enter 換行</span>
+                                        </div>
+                                        <textarea 
+                                            className={`w-full h-44 p-3 rounded-xl border font-mono outline-none text-sm leading-relaxed resize-none custom-scrollbar ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                                            placeholder={"1號姓名\n2號姓名\n3號姓名\n..."}
+                                            value={settings.studentNamesText}
+                                            onChange={e => setSettings({...settings, studentNamesText: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border-t border-slate-200/20">
+                                    <button onClick={() => setIsSettingsOpen(false)} className={`w-full py-3 ${activeTheme.bg} text-white rounded-xl font-black transition-all text-sm shadow-lg`}>儲存名單與座位設定</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

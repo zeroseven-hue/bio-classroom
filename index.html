@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班級經營與導師神器大廳 - bio-classroom (大廳四)</title>
+  <link rel="stylesheet" href="style.css?v=1.0">
+  <!-- QRCode.js CDN for QR Code Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="lobby-container">
+    <header class="lobby-header">
+      <div class="logo-area">
+        <div class="hall-tag">🏛️ 大廳四 ‧ 班級經營與導師神器專區</div>
+        <h1>🏫 班級經營與導師神器大廳 <code>bio-classroom</code></h1>
+        <p>專為班導師量身打造！涵蓋新生始業輔導、教科書發放核對、幹部選拔、座位表照片管理、掃地班務分配與賀喜得獎儀表板</p>
+      </div>
+
+      <!-- 四大大廳跨頁面導覽列 -->
+      <nav class="hall-nav-bar">
+        <a href="https://zeroseven-hue.github.io/bio-games/" class="hall-nav-btn hall-1">
+          <span class="icon">🎮</span>
+          <span class="text">大廳一：共用題庫遊戲</span>
+        </a>
+        <a href="https://zeroseven-hue.github.io/bio-standalone-games/" class="hall-nav-btn hall-2">
+          <span class="icon">🧩</span>
+          <span class="text">大廳二：獨立單元遊戲</span>
+        </a>
+        <a href="https://zeroseven-hue.github.io/bio-tools/" class="hall-nav-btn hall-3">
+          <span class="icon">🛠️</span>
+          <span class="text">大廳三：課堂教學工具</span>
+        </a>
+        <a href="index.html" class="hall-nav-btn hall-4 active">
+          <span class="icon">🏫</span>
+          <span class="text">大廳四：班級經營神器</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="lobby-main">
+      <!-- 🏫 班級經營工具卡片區域 -->
+      <section class="tools-section">
+        <h2>🏫 導師神器與班級經營工具選單 (共 8 款神器)</h2>
+        <div class="tools-grid">
+
+          <!-- 工具 1: 新生始業輔導管理面板 -->
+          <div class="tool-card card-orientation">
+            <div class="card-badge bg-blue">新生必備</div>
+            <div class="card-icon">🎒</div>
+            <h3>新生始業輔導管理面板</h3>
+            <p class="card-desc">始業輔導時程表、分組進度、處室宣導提醒與班級集合計時看板，讓新生報到第一天有條不紊。</p>
+            <div class="card-tags">
+              <span>📅 輔導時程表</span>
+              <span>🏫 處室宣導管理</span>
+              <span>🖥️ 投影模式</span>
+            </div>
+            <div class="card-actions">
+              <a href="orientation/index.html?v=1.0" class="btn-launch btn-blue">🎒 開啟始業輔導面板</a>
+            </div>
+          </div>
+
+          <!-- 工具 2: 班級幹部遴選與紀錄系統 -->
+          <div class="tool-card card-cadre">
+            <div class="card-badge bg-purple">班務選拔</div>
+            <div class="card-icon">🗳️</div>
+            <h3>班級幹部遴選與紀錄系統</h3>
+            <p class="card-desc">公開公正的民主選拔！互動式票數點選、高亮當選人、班級名簿匯入與幹部名冊一鍵列印/匯出。</p>
+            <div class="card-tags">
+              <span>🗳️ 票數點選紀錄</span>
+              <span>👑 當選高亮</span>
+              <span>📄 幹部名冊列印</span>
+            </div>
+            <div class="card-actions">
+              <a href="cadre-election/index.html?v=1.0" class="btn-launch btn-purple">🗳️ 開啟幹部遴選系統</a>
+            </div>
+          </div>
+
+          <!-- 工具 3: 新生教科書發放核對板 -->
+          <div class="tool-card card-textbook">
+            <div class="card-badge bg-green">開學首週</div>
+            <div class="card-icon">📚</div>
+            <h3>新生教科書發放核對板</h3>
+            <p class="card-desc">發書不再亂糟糟！即時清點各科課本/習作本數、追蹤缺書學生名單與高清大螢幕投影列印核對表。</p>
+            <div class="card-tags">
+              <span>📚 課本清點統計</span>
+              <span>⚠️ 缺書追蹤</span>
+              <span>🖨️ A4 簽收表列印</span>
+            </div>
+            <div class="card-actions">
+              <a href="textbook-check/index.html?v=1.0" class="btn-launch btn-green">📚 開啟教科書核對板</a>
+            </div>
+          </div>
+
+          <!-- 工具 4: 新生開學表單與繳交資料檢核系統 -->
+          <div class="tool-card card-form">
+            <div class="card-badge bg-orange">行政檢核</div>
+            <div class="card-icon">📋</div>
+            <h3>新生開學表單與繳交檢核系統</h3>
+            <p class="card-desc">戶口名簿、健卡表、緊急聯絡卡等十多項表單輕鬆勾選！本機數據保存、未繳學生統計與直覺勾選。</p>
+            <div class="card-tags">
+              <span>✓ 直覺點擊勾選</span>
+              <span>📥 Excel 匯入/匯出</span>
+              <span>💾 離線資料儲存</span>
+            </div>
+            <div class="card-actions">
+              <a href="form-check/index.html?v=1.0" class="btn-launch btn-orange">📋 開啟表單檢核系統</a>
+            </div>
+          </div>
+
+          <!-- 工具 5: 班級任務分配工具 -->
+          <div class="tool-card card-duty">
+            <div class="card-badge bg-teal">日常班務</div>
+            <div class="card-icon">🧹</div>
+            <h3>班級任務分配工具 (股長/小老師/打掃)</h3>
+            <p class="card-desc">兼顧公平與偏好！設定幹部避開規則、科目小老師對應、掃地區域配對與一鍵亂數公平抽籤分配。</p>
+            <div class="card-tags">
+              <span>🧹 打掃區域分配</span>
+              <span>📖 小老師對應</span>
+              <span>🛡️ 避開/必選規則</span>
+            </div>
+            <div class="card-actions">
+              <a href="duty-assignment/index.html?v=1.0" class="btn-launch btn-teal">🧹 開啟任務分配工具</a>
+            </div>
+          </div>
+
+          <!-- 工具 6: 班級座位與照片管理系統 -->
+          <div class="tool-card card-seating">
+            <div class="card-badge bg-indigo">導師神器</div>
+            <div class="card-icon">🪑</div>
+            <h3>班級座位與照片管理系統</h3>
+            <p class="card-desc">視覺化大螢幕排座位！支援拖曳換位、方形學生照片上傳、避開近視/過敏座位與高清 A4 座位表列印。</p>
+            <div class="card-tags">
+              <span>🖼️ 方形照片座位表</span>
+              <span>🖐️ 拖曳快速換位</span>
+              <span>🖨️ A4 講桌圖列印</span>
+            </div>
+            <div class="card-actions">
+              <a href="seating-chart/index.html?v=1.0" class="btn-launch btn-indigo">🪑 開啟座位照片系統</a>
+            </div>
+          </div>
+
+          <!-- 工具 7: 開學表單檢核清單與家長信貼條編輯器 -->
+          <div class="tool-card card-letter">
+            <div class="card-badge bg-blue">聯絡簿神器</div>
+            <div class="card-icon">✉️</div>
+            <h3>開學表單與家長信貼條編輯器</h3>
+            <p class="card-desc">專為聯絡簿貼條設計！點擊線上編輯表單清單與家長信內容、自動一頁兩聯完美列印不跑版。</p>
+            <div class="card-tags">
+              <span>📝 聯絡簿雙聯貼條</span>
+              <span>✏️ 線上即時編輯</span>
+              <span>🖨️ 強制背景彩印</span>
+            </div>
+            <div class="card-actions">
+              <a href="parent-letter/index.html?v=1.0" class="btn-launch btn-blue">✉️ 開啟貼條編輯器</a>
+            </div>
+          </div>
+
+          <!-- 工具 8: 班級萬用賀喜機 -->
+          <div class="tool-card card-award">
+            <div class="card-badge bg-gold">榮譽慶祝</div>
+            <div class="card-icon">🎉</div>
+            <h3>班級萬用賀喜機</h3>
+            <p class="card-desc">全班熱烈慶祝的氣氛神器！比賽得獎、整潔秩序第一名、進步獎等 5 級誇張動畫、彩帶與中文語音祝賀。</p>
+            <div class="card-tags">
+              <span>🏆 5級瘋狂慶祝</span>
+              <span>🎊 彩帶與動態角色</span>
+              <span>🔊 瀏覽器語音祝賀</span>
+            </div>
+            <div class="card-actions">
+              <a href="award-celebrator/index.html?v=1.0" class="btn-launch btn-gold">🎉 啟動萬用賀喜機</a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 👨‍🏫 教師派發與 QR Code 工具產生器 -->
+      <section class="dispatch-section">
+        <div class="dispatch-card">
+          <h2>📱 教師一鍵班務工具派發與 QR Code 產生器</h2>
+          <p class="dispatch-subtitle">快速生成班級經營工具的二維碼，供學生、幹部或協同老師直接掃碼開啟對應工具！</p>
+
+          <div class="dispatch-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="selectTool">選擇要派發的班經工具：</label>
+                <select id="selectTool" class="styled-select">
+                  <option value="orientation/index.html">🎒 七年級新生始業輔導管理面板 (Orientation)</option>
+                  <option value="cadre-election/index.html">🗳️ 班級幹部遴選與紀錄系統 (Cadre Election)</option>
+                  <option value="textbook-check/index.html">📚 新生教科書發放核對板 (Textbook Check)</option>
+                  <option value="form-check/index.html">📋 新生開學表單與繳交資料檢核系統 (Form Check)</option>
+                  <option value="duty-assignment/index.html">🧹 班級任務分配工具 (Duty Assignment)</option>
+                  <option value="seating-chart/index.html">🪑 班級座位與照片管理系統 (Seating Chart)</option>
+                  <option value="parent-letter/index.html">✉️ 開學表單檢核清單與家長信貼條編輯器 (Parent Letter)</option>
+                  <option value="award-celebrator/index.html">🎉 班級萬用賀喜機 (Award Celebrator)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="dispatch-buttons">
+              <button id="btnGenerateQR" class="btn-dispatch">📱 生成二維碼與連結</button>
+              <button id="btnCopyUrl" class="btn-dispatch btn-secondary">🔗 複製連結</button>
+            </div>
+
+            <!-- QR Code 與網址顯示區 -->
+            <div id="qrResultArea" class="qr-result-area hidden">
+              <div class="qr-code-box">
+                <div id="qrcode"></div>
+                <p class="qr-hint">請使用相機或 iPad 掃描此二維碼開啟工具</p>
+              </div>
+              <div class="url-box">
+                <label>工具派發網址：</label>
+                <input type="text" id="generatedUrlInput" readonly>
+                <a id="btnDirectLaunch" href="#" target="_blank" class="btn-launch-link">🚀 在新視窗開啟</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="lobby-footer">
+      <p>bio-classroom 班級經營與導師神器大廳 &copy; 2026 | 專為 GitHub Pages 部署設計 | 相容 Windows, iPad & 觸控大螢幕</p>
+    </footer>
+  </div>
+
+  <script src="app.js?v=1.0"></script>
+</body>
+</html>

@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新生教科書發放核對板</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    /* 頂部資訊列 */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      padding: 6px 14px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+
+    .title-text {
+      font-size: 16px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .total-badge {
+      background: #0284c7;
+      padding: 3px 12px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    /* 控制列 */
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+      background: #334155;
+      padding: 4px 10px;
+      border-radius: 6px;
+      align-items: center;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .controls input[type="text"],
+    .controls input[type="number"] {
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #64748b;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .btn {
+      padding: 3px 10px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-green { background: #10b981; }
+    .btn-green:hover { background: #059669; }
+
+    .btn-screen { background: #8b5cf6; }
+    .btn-screen:hover { background: #7c3aed; }
+
+    .btn-excel { background: #0284c7; }
+    .btn-excel:hover { background: #0369a1; }
+
+    .btn-pdf { background: #d97706; }
+    .btn-pdf:hover { background: #b45309; }
+
+    /* 字體大小控制器 */
+    .font-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .font-control input[type="range"] {
+      cursor: pointer;
+      width: 70px;
+    }
+
+    /* 單列橫向滾動容器（由右至左） */
+    .board-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row-reverse;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 8px;
+      padding-bottom: 4px;
+      align-items: stretch;
+    }
+
+    .board-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .board-container::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+
+    /* 注意事項提醒卡（最右側/最先看到） */
+    .notice-card {
+      flex: 0 0 230px;
+      background: #ecfdf5;
+      color: #064e3b;
+      border: 2px solid #34d399;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      user-select: none;
+    }
+
+    .notice-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #047857;
+      margin-bottom: 8px;
+      text-align: center;
+      padding-bottom: 4px;
+      border-bottom: 2px dashed #a7f3d0;
+      cursor: text;
+    }
+
+    .notice-title:focus {
+      outline: 1px solid #059669;
+      background: #ffffff;
+    }
+
+    .notice-list {
+      flex: 1;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .notice-item {
+      font-size: 15px;
+      font-weight: bold;
+      color: #065f46;
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+      background: #ffffff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #a7f3d0;
+    }
+
+    .notice-item-text {
+      flex: 1;
+      cursor: text;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .notice-item-text:focus {
+      outline: none;
+      background: #f0fdf4;
+    }
+
+    .notice-del-btn {
+      color: #ef4444;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+
+    .notice-add-btn {
+      margin-top: 6px;
+      background: #059669;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      text-align: center;
+    }
+
+    .notice-add-btn:hover {
+      background: #047857;
+    }
+
+    /* 直式卡片 */
+    .book-card {
+      flex: 0 0 auto;
+      min-width: 58px;
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 6px;
+      padding: 4px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+      cursor: grab;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .book-card:active {
+      cursor: grabbing;
+    }
+
+    .book-card.dragging {
+      opacity: 0.3;
+      border: 2px dashed #0284c7;
+    }
+
+    /* 頂部按鈕 */
+    .card-top-actions {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 4px;
+      padding: 0 1px;
+      flex-shrink: 0;
+    }
+
+    .move-btn {
+      background: #e2e8f0;
+      border: none;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    .move-btn:hover {
+      background: #cbd5e1;
+    }
+
+    .del-btn {
+      background: #fee2e2;
+      color: #ef4444;
+      border: none;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* 單一直行文字流 */
+    .vertical-text-flow {
+      flex: 1;
+      width: 100%;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      white-space: nowrap;
+      text-align: start;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .subject-title {
+      font-size: var(--title-font-size, 34px);
+      font-weight: 900;
+      color: #1e3a8a;
+      letter-spacing: 2px;
+      display: inline;
+    }
+
+    .details-text {
+      font-size: var(--details-font-size, 19px);
+      font-weight: bold;
+      color: #047857;
+      letter-spacing: 1px;
+      display: inline;
+      margin-top: 2px;
+      cursor: text;
+      border-radius: 2px;
+    }
+
+    .details-text:focus {
+      outline: 1px solid #10b981;
+      background: #f0fdf4;
+    }
+
+    /* 底部本數外框（藍色外框 + 淺藍底色） */
+    .count-box {
+      width: 100%;
+      background: #eff6ff;
+      border: 1.5px solid #93c5fd;
+      border-radius: 5px;
+      padding: 3px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      margin-top: auto;
+    }
+
+    .count-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 1px;
+    }
+
+    /* 數字輸入框 */
+    .count-input {
+      width: 100%;
+      max-width: 52px;
+      text-align: center;
+      font-size: var(--count-font-size, 26px);
+      font-weight: 900;
+      padding: 1px 0;
+      border: 2px solid #2563eb;
+      border-radius: 4px;
+      color: #c2410c;
+      outline: none;
+      background: #ffffff;
+      line-height: 1.1;
+    }
+
+    .count-input:focus {
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+    }
+
+    .count-input::-webkit-outer-spin-button,
+    .count-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .count-input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* ================= 大螢幕投影播放模式樣式 ================= */
+    body.fullscreen-mode {
+      padding: 14px 20px;
+    }
+
+    body.fullscreen-mode .controls {
+      display: none !important;
+    }
+
+    body.fullscreen-mode header {
+      padding: 10px 20px;
+      margin-bottom: 12px;
+    }
+
+    body.fullscreen-mode .title-text {
+      font-size: 24px;
+    }
+
+    body.fullscreen-mode .total-badge {
+      font-size: 24px;
+      padding: 6px 18px;
+    }
+
+    body.fullscreen-mode .card-top-actions,
+    body.fullscreen-mode .notice-del-btn,
+    body.fullscreen-mode .notice-add-btn {
+      display: none !important;
+    }
+
+    body.fullscreen-mode .notice-card {
+      flex: 0 0 320px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      border-width: 3px;
+    }
+
+    body.fullscreen-mode .notice-title {
+      font-size: 26px;
+      margin-bottom: 14px;
+    }
+
+    body.fullscreen-mode .notice-item {
+      font-size: 22px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+
+    body.fullscreen-mode .book-card {
+      min-width: 90px;
+      padding: 10px 8px;
+      cursor: default;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    body.fullscreen-mode .count-box {
+      padding: 6px 4px;
+    }
+
+    body.fullscreen-mode .count-label {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    body.fullscreen-mode .count-input {
+      max-width: 80px;
+      pointer-events: none;
+    }
+
+    .exit-fullscreen-btn {
+      display: none;
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      margin-left: 12px;
+    }
+
+    body.fullscreen-mode .exit-fullscreen-btn {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* 列印 / 單頁 PDF 樣式 */
+    #printArea {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+      }
+
+      header, .controls, .board-container {
+        display: none !important;
+      }
+
+      #printArea {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .print-columns {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .print-table {
+        width: calc(50% - 6px);
+        border-collapse: collapse;
+        font-size: 12.5px;
+        color: #000;
+        table-layout: fixed;
+      }
+
+      .print-table th, .print-table td {
+        border: 1px solid #1e293b;
+        padding: 4px 4px;
+        text-align: center;
+        word-break: break-all;
+      }
+
+      .print-table th {
+        background-color: #f1f5f9;
+        font-weight: bold;
+      }
+
+      .print-notice-box {
+        margin-top: 8px;
+        padding: 6px 10px;
+        background: #f0fdf4;
+        border: 1px solid #059669;
+        border-radius: 4px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .summary-box {
+        margin-top: 8px;
+        padding: 6px 12px;
+        background-color: #f8fafc;
+        border: 1.5px solid #1e293b;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        font-weight: bold;
+        width: 100%;
+      }
+
+      .sign-area {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="../index.html" class="btn" style="background:#475569;color:#fff;text-decoration:none;padding:3px 10px;border-radius:4px;font-size:13px;font-weight:bold">⬅️ 返回大廳四</a>
+      <div class="title-text">📚 新生教科書發放核對板</div>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <div class="total-badge">總本數：<span id="totalBooks">0</span> 本</div>
+      <button class="exit-fullscreen-btn" onclick="toggleFullScreen()">✕ 退出大螢幕</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <input type="text" id="newSubject" placeholder="科目 (例: 地理)" style="width: 85px;">
+    <input type="text" id="newDetails" placeholder="細項 (例: (課本/習作))" style="width: 120px;">
+    <input type="number" id="newCount" placeholder="本數" style="width: 45px;" min="0" value="1">
+    <button class="btn btn-green" onclick="addNewCard()">➕ 新增</button>
+
+    <div class="font-control">
+      <span>字體/數字大小</span>
+      <input type="range" id="fontSlider" min="22" max="65" value="34" oninput="changeFontSize(this.value)">
+      <span id="fontValText">34px</span>
+    </div>
+
+    <button class="btn btn-screen" onclick="toggleFullScreen()">📺 大螢幕播放</button>
+    <button class="btn btn-excel" onclick="exportExcel()">📊 匯出 Excel</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">📄 匯出 PDF / 列印清單 (單頁)</button>
+  </div>
+
+  <!-- 主看板容器 -->
+  <div class="board-container" id="board">
+    
+    <!-- 注意事項卡片（置於 flex 陣列最前 / 視覺最右側） -->
+    <div class="notice-card" id="noticeCard">
+      <div class="notice-title" contenteditable="true" id="noticeHeader" onblur="saveNoticeHeader(this.innerText)">
+        拿到課本後請學生確認
+      </div>
+      <div class="notice-list" id="noticeList"></div>
+      <button class="notice-add-btn" onclick="addNewNoticeItem()">➕ 新增注意事項</button>
+    </div>
+
+    <!-- 書本卡片掛載區域 -->
+    <div id="cardsWrapper" style="display: flex; flex-direction: row-reverse; gap: 8px; flex: 1;"></div>
+  </div>
+
+  <!-- 單頁雙欄列印 / PDF 區域 -->
+  <div id="printArea">
+    <h2 style="text-align: center; margin-bottom: 4px; font-size: 19px;">新生教科書發放核對清單</h2>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #475569;">
+      <span>核對順序：由左至右（依發放順序）</span>
+      <span id="printDate"></span>
+    </div>
+
+    <div class="print-columns">
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">序號</th>
+            <th style="width: 33%;">科目</th>
+            <th style="width: 37%;">細項</th>
+            <th style="width: 15%;">冊數</th>
+          </tr>
+        </thead>
+        <tbody id="printTableCol1"></tbody>
+      </table>
+
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 15%;">序號</th>
+            <th style="width: 33%;">科目</th>
+            <th style="width: 37%;">細項</th>
+            <th style="width: 15%;">冊數</th>
+          </tr>
+        </thead>
+        <tbody id="printTableCol2"></tbody>
+      </table>
+    </div>
+
+    <!-- 列印版注意事項 -->
+    <div class="print-notice-box" id="printNoticeBox"></div>
+
+    <div class="summary-box">
+      <span>應發科目：<span id="printSubjectCount">0</span> 科</span>
+      <span>應領總冊數：<span id="printTotalCount" style="font-size: 16px; color: #c2410c;">0</span> 本</span>
+      <div class="sign-area">
+        <span style="font-weight: normal;">學生簽名：</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 發放資料清單
+    let bookData = [
+      { id: '1', title: '國文', details: '(課本/習作)', count: 2 },
+      { id: '2', title: '英文', details: '(課本/習作/附錄本)', count: 3 },
+      { id: '3', title: '數學', details: '(課本/習作)', count: 2 },
+      { id: '4', title: '自然_生', details: '(課本/紀錄簿)', count: 2 },
+      { id: '5', title: '社會', details: '(課本/習作)', count: 2 },
+      { id: '6', title: '科技', details: '(課本)', count: 1 },
+      { id: '7', title: '藝術', details: '(課本)', count: 1 },
+      { id: '8', title: '綜合', details: '(課本)', count: 1 },
+      { id: '9', title: '健體', details: '(課本)', count: 1 },
+      { id: '10', title: '聯絡簿', details: '(家庭聯絡簿)', count: 1 },
+      { id: '11', title: 'L型夾', details: '(各式表單)', count: 1 },
+      { id: '12', title: '透明文具包', details: '(桃園市政府贈)', count: 1 }
+    ];
+
+    // 注意事項資料
+    let noticeData = {
+      header: '拿到課本後請學生確認',
+      items: [
+        '有沒有缺頁、破損',
+        '數量是否正確',
+        '寫上自己的姓名',
+        'L型資料夾  開學首週表單發放與時程提醒清單(A4半張)，因每位同學資料夾內容物不太相同，故留了2個空格自行填寫',
+        'L型資料夾 學生輔導資料紀錄表(白色A3單張)，請檢查是否有完成，今日會收回不帶回去'
+      ]
+    };
+
+    let previousFontSize = 34;
+    const cardsWrapper = document.getElementById('cardsWrapper');
+
+    function renderNotices() {
+      document.getElementById('noticeHeader').innerText = noticeData.header;
+      const list = document.getElementById('noticeList');
+      list.innerHTML = '';
+
+      noticeData.items.forEach((itemText, idx) => {
+        const item = document.createElement('div');
+        item.className = 'notice-item';
+        item.innerHTML = `
+          <span>✔</span>
+          <span class="notice-item-text" contenteditable="true" 
+                onblur="updateNoticeItem(${idx}, this.innerText)">${itemText}</span>
+          <button class="notice-del-btn" title="刪除項目" onclick="deleteNoticeItem(${idx})">✕</button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function saveNoticeHeader(text) {
+      noticeData.header = text.trim();
+    }
+
+    function updateNoticeItem(idx, text) {
+      noticeData.items[idx] = text.trim();
+    }
+
+    function deleteNoticeItem(idx) {
+      noticeData.items.splice(idx, 1);
+      renderNotices();
+    }
+
+    function addNewNoticeItem() {
+      noticeData.items.push('新增提醒項目');
+      renderNotices();
+    }
+
+    function renderBoard() {
+      cardsWrapper.innerHTML = '';
+      bookData.forEach((book, index) => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.draggable = !document.body.classList.contains('fullscreen-mode');
+        card.dataset.index = index;
+
+        card.innerHTML = `
+          <div class="card-top-actions">
+            <button class="move-btn" title="移至最前（最右側）" onclick="moveToFront(${index})">⏩</button>
+            <button class="del-btn" title="刪除" onclick="deleteCard(${index})">✕</button>
+          </div>
+          
+          <div class="vertical-text-flow">
+            <span class="subject-title">${book.title}</span><span class="details-text" contenteditable="${!document.body.classList.contains('fullscreen-mode')}" 
+                  title="點擊可直接修改" 
+                  onblur="updateDetailsDirect(${index}, this.innerText)">${book.details}</span>
+          </div>
+
+          <div class="count-box">
+            <span class="count-label">應發本數</span>
+            <input type="number" class="count-input" value="${book.count}" min="0" 
+                   onchange="updateCount(${index}, this.value)">
+          </div>
+        `;
+
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+
+        cardsWrapper.appendChild(card);
+      });
+
+      calculateTotal();
+      renderNotices();
+    }
+
+    function calculateTotal() {
+      const total = bookData.reduce((sum, item) => sum + (parseInt(item.count) || 0), 0);
+      document.getElementById('totalBooks').textContent = total;
+    }
+
+    function updateCount(index, value) {
+      bookData[index].count = parseInt(value) || 0;
+      calculateTotal();
+    }
+
+    function updateDetailsDirect(index, text) {
+      bookData[index].details = text.trim();
+    }
+
+    function moveToFront(index) {
+      const item = bookData.splice(index, 1)[0];
+      bookData.unshift(item);
+      renderBoard();
+    }
+
+    function deleteCard(index) {
+      bookData.splice(index, 1);
+      renderBoard();
+    }
+
+    function addNewCard() {
+      const title = document.getElementById('newSubject').value.trim();
+      let details = document.getElementById('newDetails').value.trim();
+      const count = parseInt(document.getElementById('newCount').value) || 0;
+
+      if (!title) {
+        alert('請填寫科目名稱');
+        return;
+      }
+
+      if (!details) {
+        details = '(課本)';
+      } else if (!details.startsWith('(')) {
+        details = `(${details})`;
+      }
+
+      bookData.unshift({
+        id: Date.now().toString(),
+        title: title,
+        details: details,
+        count: count
+      });
+
+      document.getElementById('newSubject').value = '';
+      document.getElementById('newDetails').value = '';
+      document.getElementById('newCount').value = '1';
+
+      renderBoard();
+    }
+
+    function changeFontSize(val) {
+      document.getElementById('fontValText').textContent = val + 'px';
+      document.documentElement.style.setProperty('--title-font-size', val + 'px');
+      document.documentElement.style.setProperty('--details-font-size', Math.round(val * 0.52) + 'px');
+      document.documentElement.style.setProperty('--count-font-size', Math.round(val * 0.82) + 'px');
+    }
+
+    /* 大螢幕播放全螢幕切換控制 */
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          enterFullscreenLayout();
+        }).catch(() => {
+          enterFullscreenLayout();
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+        exitFullscreenLayout();
+      }
+    }
+
+    function enterFullscreenLayout() {
+      document.body.classList.add('fullscreen-mode');
+      previousFontSize = document.getElementById('fontSlider').value;
+      changeFontSize(50);
+      renderBoard();
+    }
+
+    function exitFullscreenLayout() {
+      document.body.classList.remove('fullscreen-mode');
+      document.getElementById('fontSlider').value = previousFontSize;
+      changeFontSize(previousFontSize);
+      renderBoard();
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        exitFullscreenLayout();
+      }
+    });
+
+    function exportExcel() {
+      let csvContent = "\uFEFF序號,科目,包含細項,應發本數\n";
+      let total = 0;
+
+      bookData.forEach((item, idx) => {
+        const count = parseInt(item.count) || 0;
+        total += count;
+        csvContent += `${idx + 1},"${item.title}","${item.details}",${count}\n`;
+      });
+
+      csvContent += `,,總計本數,${total}\n\n`;
+      csvContent += `【注意事項】\n`;
+      csvContent += `${noticeData.header}\n`;
+      noticeData.items.forEach((item, i) => {
+        csvContent += `${i + 1}. ${item}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `新生教科書發放清單_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportPDF() {
+      const col1 = document.getElementById('printTableCol1');
+      const col2 = document.getElementById('printTableCol2');
+      col1.innerHTML = '';
+      col2.innerHTML = '';
+
+      let total = 0;
+      const half = Math.ceil(bookData.length / 2);
+
+      bookData.forEach((item, idx) => {
+        const count = parseInt(item.count) || 0;
+        total += count;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><strong>${item.title}</strong></td>
+          <td style="font-size: 11.5px;">${item.details}</td>
+          <td><strong>${count}</strong></td>
+        `;
+
+        if (idx < half) {
+          col1.appendChild(row);
+        } else {
+          col2.appendChild(row);
+        }
+      });
+
+      // 產生列印版注意事項
+      const printNoticeBox = document.getElementById('printNoticeBox');
+      let noticeHtml = `<strong>📌 【${noticeData.header}】</strong> `;
+      noticeHtml += noticeData.items.map((it, idx) => `${idx + 1}. ${it}`).join(' | ');
+      printNoticeBox.innerHTML = noticeHtml;
+
+      const today = new Date();
+      document.getElementById('printDate').textContent = `製表日期：${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+      document.getElementById('printSubjectCount').textContent = bookData.length;
+      document.getElementById('printTotalCount').textContent = total;
+
+      window.print();
+    }
+
+    let draggedIndex = null;
+
+    function handleDragStart(e) {
+      if (document.body.classList.contains('fullscreen-mode')) return;
+      draggedIndex = parseInt(this.dataset.index);
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(e) {
+      if (document.body.classList.contains('fullscreen-mode')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDrop(e) {
+      if (document.body.classList.contains('fullscreen-mode')) return;
+      e.preventDefault();
+      const targetIndex = parseInt(this.dataset.index);
+      if (draggedIndex !== null && draggedIndex !== targetIndex) {
+        const draggedItem = bookData.splice(draggedIndex, 1)[0];
+        bookData.splice(targetIndex, 0, draggedItem);
+        renderBoard();
+      }
+    }
+
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+    }
+
+    changeFontSize(34);
+    renderBoard();
+  </script>
+</body>
+</html>

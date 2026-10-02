@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開學表單檢核清單與家長信編輯器（聯絡簿貼條）</title>
+<style>
+    :root {
+        --primary: #2d5a27;
+        --primary-light: #f0f7f0;
+        --border: #d0ded0;
+    }
+    * {
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+    body {
+        background-color: #f4f6f8;
+        margin: 0;
+        padding: 20px;
+        color: #2c3e50;
+    }
+    .no-print {
+        max-width: 900px;
+        margin: 0 auto 20px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+        margin-top: 0;
+        color: var(--primary);
+    }
+    .toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    button {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    button:hover {
+        background-color: #23471f;
+    }
+    button.secondary {
+        background-color: #5c7080;
+    }
+    button.danger {
+        background-color: #d9534f;
+    }
+    .editable-box {
+        outline: none;
+        transition: background 0.2s;
+    }
+    .editable-box:focus {
+        background: #feffea !important;
+        box-shadow: 0 0 0 1.5px #2d5a27;
+        border-radius: 2px;
+    }
+    
+    /* 預覽與列印區塊 (A4 設定) */
+    .print-sheet {
+        max-width: 210mm;
+        margin: 0 auto;
+        background: white;
+        padding: 8mm 12mm;
+        box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    .slip {
+        border: 1.5px dashed #4a7c59;
+        border-radius: 8px;
+        padding: 10px 14px;
+        background-color: #fafdfa;
+        margin-bottom: 8mm;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .header {
+        border-bottom: 1.5px solid #4a7c59;
+        padding-bottom: 4px;
+        margin-bottom: 6px;
+        text-align: center;
+    }
+    .header-title {
+        font-size: 15px;
+        font-weight: bold;
+        color: var(--primary);
+        letter-spacing: 0.5px;
+    }
+    .letter {
+        font-size: 11px;
+        color: #333;
+        background-color: var(--primary-light);
+        border-left: 3.5px solid #4a7c59;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+        line-height: 1.4;
+        border-radius: 0 4px 4px 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+    th, td {
+        border: 1px solid var(--border);
+        padding: 4px 6px;
+        text-align: left;
+        vertical-align: middle;
+    }
+    th {
+        background-color: #e2efe2 !important;
+        color: #244820;
+        text-align: center;
+        font-weight: bold;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .col-op { width: 45px; text-align: center; }
+    .col-check { width: 48px; text-align: center; font-size: 12px; }
+    .col-name { width: 28%; font-weight: bold; }
+    .col-type { width: 16%; text-align: center; }
+    .col-desc { width: 38%; color: #444; }
+    .col-date { width: 14%; text-align: center; font-size: 10.5px; color: #b22222; font-weight: bold; }
+    
+    /* 精緻膠囊標籤樣式 */
+    .badge-must {
+        display: inline-block;
+        background-color: #ffeaea !important;
+        color: #b22222 !important;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 10.5px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .badge-info {
+        display: inline-block;
+        background-color: #e8f2fc !important;
+        color: #1a5f9e !important;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 10.5px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .badge-opt {
+        display: inline-block;
+        background-color: #fff4e5 !important;
+        color: #c26904 !important;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 10.5px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    .footer {
+        font-size: 10.5px;
+        color: #555;
+        border-top: 1px dotted #a3c4a3;
+        padding-top: 4px;
+    }
+    .cut-line {
+        text-align: center;
+        font-size: 10.5px;
+        color: #888;
+        margin: 10px 0;
+        border-top: 1px dashed #bbb;
+        padding-top: 4px;
+    }
+    
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 10mm;
+        }
+        body {
+            background: white;
+            padding: 0;
+            margin: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .no-print, .col-op {
+            display: none !important;
+        }
+        .print-sheet {
+            box-shadow: none;
+            padding: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+        .slip {
+            margin-bottom: 6mm;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="no-print">
+    <a href="../index.html" style="background:#475569;color:#fff;text-decoration:none;padding:8px 14px;border-radius:6px;font-weight:bold;font-size:13px;display:inline-block;margin-bottom:10px">⬅️ 返回大廳四 (導師神器)</a>
+    <h2>📋 開學表單與家長信清單產生器（高質感列印修復版）</h2>
+    <p style="font-size: 13px; color: #555; margin-bottom: 12px; line-height: 1.5;">
+        💡 <strong>修復說明：</strong>已加入強制列印背景色（<code>print-color-adjust: exact</code>）與標籤膠囊背景設定。點擊下方表格或文字可隨時線上編輯，點擊「🖨️ 列印 / 另存為 PDF」即可產出與左圖完全一致的高質感貼條！
+    </p>
+    <div class="toolbar">
+        <button onclick="window.print()">🖨️ 列印 / 另存為 PDF</button>
+        <button class="secondary" onclick="addRow()">➕ 新增一列清單項目</button>
+        <button class="secondary" onclick="syncSlips()">🔄 同步下方第二聯</button>
+    </div>
+</div>
+
+<div class="print-sheet" id="printSheet">
+    <!-- SLIP 1 -->
+    <div class="slip" id="slip1">
+        <div class="header">
+            <div class="header-title">🌿 開學首週表單發放與時程提醒清單</div>
+        </div>
+        
+        <div class="letter editable-box" contenteditable="true">
+            親愛的家長您好：新學期開始，為配合學校各項行政作業與學生照顧調查，開學首日發放了較多表單與通知。深知開學之際事務繁多，造成您的填寫負擔敬請見諒！為方便您掌握發放內容與繳回時程，特別整理此檢核清單供您核對參考，感謝您的體諒與配合！
+        </div>
+
+        <table id="table1">
+            <thead>
+                <tr>
+                    <th class="col-op no-print">操作</th>
+                    <th class="col-check">核對</th>
+                    <th class="col-name">表單 / 項目名稱</th>
+                    <th class="col-type">處理方式</th>
+                    <th class="col-desc">說明重點 / 需附證件</th>
+                    <th class="col-date">預計繳回期限</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">學生肖像權同意書</td>
+                    <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">班級活動紀錄與作品公開授權</td>
+                    <td class="col-date editable-box" contenteditable="true">開學當日 / 隔日</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">親師溝通家長調查表</td>
+                    <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">建立緊急聯絡與輔導紀錄</td>
+                    <td class="col-date editable-box" contenteditable="true">開學當日 / 隔日</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">午餐用餐說明與調查</td>
+                    <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">用餐規範、訂餐/自備調查（貼聯絡簿）</td>
+                    <td class="col-date editable-box" contenteditable="true">開學當日 / 隔日</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">第八節課後輔導意願調查</td>
+                    <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">課後輔導參加意願與繳費通知</td>
+                    <td class="col-date editable-box" contenteditable="true">9/3 (四) 放學前</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">教育優先區指標界定調查</td>
+                    <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">家庭身分普查（原民/低收/新住民等）</td>
+                    <td class="col-date editable-box" contenteditable="true">首週五前</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">桃園鈣健康申辦表</td>
+                    <td class="col-type"><span class="badge-info editable-box" contenteditable="true">家長自存</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">學生乳品營養補助，請家長自行線上填寫</td>
+                    <td class="col-date editable-box" contenteditable="true">免繳回 (線上)</td>
+                </tr>
+                <tr>
+                    <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+                    <td class="col-check">□</td>
+                    <td class="col-name editable-box" contenteditable="true">各項補助申請（依需求領取）</td>
+                    <td class="col-type"><span class="badge-opt editable-box" contenteditable="true">符合者繳回</span></td>
+                    <td class="col-desc editable-box" contenteditable="true">愛心早餐 / 弱勢午餐減免 / 課後扶助 / 家長會費減免</td>
+                    <td class="col-date editable-box" contenteditable="true">依各表單期限</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer editable-box" contenteditable="true">
+            ※ 此清單供家長掌握核對使用；若有任何表單疑問或補助申請需求，歡迎直接於聯絡簿留言。
+        </div>
+    </div>
+
+    <div class="cut-line">✂ - - - - - - - - - - - - - - - - - - - - 裁 切 線（可剪下黏貼於聯絡簿） - - - - - - - - - - - - - - - - - - - - ✂</div>
+
+    <!-- SLIP 2 (Auto synced) -->
+    <div class="slip" id="slip2">
+        <!-- Will be dynamically populated/synced from slip 1 -->
+    </div>
+</div>
+
+<script>
+function syncSlips() {
+    const slip1Content = document.getElementById('slip1').innerHTML;
+    document.getElementById('slip2').innerHTML = slip1Content;
+}
+
+function addRow() {
+    const tbody = document.querySelector('#table1 tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="col-op no-print"><button class="danger" style="padding:2px 5px; font-size:10px;" onclick="deleteRow(this)">刪除</button></td>
+        <td class="col-check">□</td>
+        <td class="col-name editable-box" contenteditable="true">新表單項目</td>
+        <td class="col-type"><span class="badge-must editable-box" contenteditable="true">全班收回</span></td>
+        <td class="col-desc editable-box" contenteditable="true">說明內容</td>
+        <td class="col-date editable-box" contenteditable="true">期限</td>
+    `;
+    tbody.appendChild(tr);
+    syncSlips();
+}
+
+function deleteRow(btn) {
+    btn.closest('tr').remove();
+    syncSlips();
+}
+
+window.onload = function() {
+    syncSlips();
+};
+window.onbeforeprint = function() {
+    syncSlips();
+};
+</script>
+
+</body>
+</html>

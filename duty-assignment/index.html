@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級任務分配工具 - Classroom Duties Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #f4f6f8;
+            --white: #ffffff;
+            --text-main: #2c3e50;
+            --text-sub: #6c757d;
+            --accent-green: #1f5f5b;
+            --accent-green-hover: #164643;
+            --border-color: #e2e8f0;
+            --border-dark: #cbd5e1;
+            --radius: 8px;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 12px 10px;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background-color: var(--white);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-subtitle {
+            color: var(--accent-green);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .header-desc {
+            color: var(--text-sub);
+            font-size: 13px;
+        }
+
+        .student-card {
+            background-color: var(--white);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .student-mgmt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .student-mgmt-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .student-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .student-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+
+        .student-tag {
+            background-color: #edf2f7;
+            color: #2d3748;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.15s;
+        }
+
+        .student-tag:hover { background-color: #e2e8f0; }
+        .remove-btn {
+            cursor: pointer;
+            color: #a0aec0;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 1;
+            margin-left: 4px;
+        }
+        .remove-btn:hover { color: #e53e3e; }
+
+        .rule-panel {
+            display: none;
+            background-color: #f8fafc;
+            border: 1px dashed var(--accent-green);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+
+        .rule-panel.active { display: block; }
+        .rule-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .rule-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .rule-box {
+            background: var(--white);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .rule-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--accent-green);
+        }
+
+        .rule-form {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .rule-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 1024px) {
+            .grid-layout { grid-template-columns: 1fr 1fr; }
+        }
+
+        .section-card {
+            background-color: var(--white);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .section-subtitle {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid var(--border-dark);
+            background-color: var(--white);
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover { background-color: #f8fafc; }
+        .btn-primary { background-color: var(--accent-green); color: var(--white); border-color: var(--accent-green); }
+        .btn-primary:hover { background-color: var(--accent-green-hover); }
+        .btn-sm { padding: 3px 8px; font-size: 12px; }
+
+        .options-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .option-box {
+            background-color: #f1f4f1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .option-box input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--accent-green);
+            cursor: pointer;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .add-form {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .add-input {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .add-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 2px rgba(31, 95, 91, 0.15);
+        }
+
+        .add-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
+            font-size: 13px;
+            background-color: var(--white);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .task-card {
+            background-color: #f7f9f7;
+            border: 1px solid #e2e8e2;
+            border-radius: 6px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .task-info { min-width: 120px; }
+        .task-name { font-weight: 700; font-size: 14px; color: #1a202c; }
+        .task-category { font-size: 11px; color: #718096; }
+
+        .task-count-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .count-input {
+            width: 44px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid var(--border-dark);
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: #718096;
+            min-width: 50px;
+        }
+
+        .assigned-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #e6f4ea;
+            color: #137333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .sub-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #feefc3;
+            color: #b06000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .task-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .task-select {
+            padding: 4px 6px;
+            border: 1px solid var(--border-dark);
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: var(--white);
+            max-width: 120px;
+        }
+
+        .stats-banner {
+            background-color: #f1f5f9;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #475569;
+            margin-top: 12px;
+        }
+
+        .result-section { margin-top: 12px; }
+        .result-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; color: #1e293b; }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background-color: var(--white);
+            table-layout: fixed;
+        }
+
+        .result-table th, .result-table td {
+            border: 1px solid var(--border-color);
+            padding: 6px 8px;
+            text-align: left;
+            min-height: 32px;
+            word-break: break-all;
+        }
+
+        .result-table th {
+            background-color: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .result-table tr:nth-child(even) { background-color: #fafafa; }
+
+        body.print-officers-only #clean-result-section { display: none !important; }
+        body.print-clean-only #officer-result-section { display: none !important; }
+
+        @media print {
+            body { background: white !important; padding: 10px !important; margin: 0 !important; }
+            .header-card, .student-card, .rule-panel, .section-header, .options-bar, .toolbar, .add-form, .task-list, .stats-banner, .action-btns {
+                display: none !important;
+            }
+            .section-card { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            body.print-officers-only .grid-layout, body.print-clean-only .grid-layout { display: block !important; }
+            body:not(.print-officers-only):not(.print-clean-only) .grid-layout { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
+            .result-section { margin-top: 0 !important; }
+            .result-title { font-size: 18px !important; margin-bottom: 10px !important; }
+            .result-table th, .result-table td { padding: 6px 6px !important; font-size: 12px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-card">
+        <div class="header-subtitle">CLASSROOM DUTIES • 班級任務</div>
+        <div class="header-title">班級任務分配工具</div>
+        <div class="header-desc">學生名單與各區任務匯入獨立運作，匯入幹部時絕不修改全班總人數。</div>
+    </div>
+
+    <input type="file" id="file-students-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleStudentsImport(event)">
+    <input type="file" id="file-officers-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleOfficersImport(event)">
+    <input type="file" id="file-clean-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleCleanImport(event)">
+
+    <a href="../index.html" class="btn" style="background:#475569;color:#fff;text-decoration:none;margin-bottom:12px;display:inline-flex;padding:8px 16px;border-radius:6px;font-weight:700">⬅️ 返回大廳四 (導師神器)</a>
+    <div class="student-card">
+        <div class="student-mgmt-header">
+            <div class="student-mgmt-title">👥 學生名單管理 (共 <span id="student-count">25</span> 人)</div>
+            <div class="student-actions">
+                <button class="btn" onclick="toggleRulePanel()">⚙️ 高級規則與偏好設定</button>
+                <button class="btn btn-primary" onclick="triggerStudentsImport()">📊 匯入全班學生名單</button>
+                <button class="btn" onclick="resetDefaultStudents()">載入預設 25 人</button>
+            </div>
+        </div>
+        <div class="student-tags" id="student-tags-container"></div>
+    </div>
+
+    <div class="rule-panel" id="rule-panel">
+        <div class="rule-grid">
+            <div class="rule-box">
+                <div class="rule-title">🛡️ 幹部必選 / 避開設定</div>
+                <div class="rule-form">
+                    <select id="rule-officer-student" class="add-select"></select>
+                    <select id="rule-officer-type" class="add-select">
+                        <option value="must">必選 (指定為)</option>
+                        <option value="avoid">避開 (不能擔任)</option>
+                    </select>
+                    <select id="rule-officer-task" class="add-select"></select>
+                    <button class="btn btn-sm btn-primary" onclick="addOfficerRule()">新增</button>
+                </div>
+                <div class="rule-list" id="officer-rule-list"></div>
+            </div>
+
+            <div class="rule-box">
+                <div class="rule-title">🧹 掃地必選 / 避開設定</div>
+                <div class="rule-form">
+                    <select id="rule-clean-student" class="add-select"></select>
+                    <select id="rule-clean-type" class="add-select">
+                        <option value="must">必選 (指定為)</option>
+                        <option value="avoid">避開 (不能擔任)</option>
+                    </select>
+                    <select id="rule-clean-task" class="add-select"></select>
+                    <button class="btn btn-sm btn-primary" onclick="addCleanRule()">新增</button>
+                </div>
+                <div class="rule-list" id="clean-rule-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-layout">
+        <div class="section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">班級幹部與小老師</div>
+                    <div class="section-subtitle">匯入幹部名單將自動對應學生，絕不修改全班總人數。</div>
+                </div>
+                <div class="action-btns">
+                    <button class="btn" onclick="exportToExcel()">儲存 Excel</button>
+                    <button class="btn" onclick="triggerOfficersImport()">載入幹部 Excel/CSV</button>
+                    <button class="btn" onclick="printReport('officers')">僅列印此表</button>
+                    <button class="btn btn-primary" onclick="printReport('all')">列印全部結果</button>
+                </div>
+            </div>
+
+            <div class="options-bar">
+                <label class="option-box">
+                    <input type="checkbox" id="teacher-no-dup" checked>
+                    每人最多擔任 1 個小老師 (小老師間不重複)
+                </label>
+                <label class="option-box">
+                    <input type="checkbox" id="officer-sub-no-dup" checked>
+                    代理人不重複指派
+                </label>
+            </div>
+
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="randomAssignOfficers()">亂數分配未指定職務與代理人</button>
+                <button class="btn" onclick="clearOfficersAssign()">清除全部分配</button>
+                <button class="btn" onclick="clearOfficersSubOnly()">僅清除代理人</button>
+                <button class="btn" onclick="resetDefaultOfficers()">恢復預設職務</button>
+            </div>
+
+            <div class="add-form">
+                <input type="text" id="add-officer-name" class="add-input" placeholder="新增職務，例如：午餐股長">
+                <select id="add-officer-cat" class="add-select">
+                    <option value="班級幹部">班級幹部</option>
+                    <option value="科目小老師">科目小老師</option>
+                </select>
+                <button class="btn" onclick="addOfficerTask()">新增</button>
+            </div>
+
+            <div class="task-list" id="officers-list"></div>
+
+            <div class="stats-banner" id="officer-stats">
+                學生人數：25 人 | 工作名額：31 人次 / 已分配 0 人次 / 涉及 0 位學生
+            </div>
+
+            <div class="result-section" id="officer-result-section">
+                <div class="result-title">班級幹部與小老師分配表</div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">類別</th>
+                            <th style="width: 25%;">職務</th>
+                            <th style="width: 30%;">正職座號/姓名</th>
+                            <th style="width: 30%;">職務代理人</th>
+                        </tr>
+                    </thead>
+                    <tbody id="officer-result-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">掃地工作分配</div>
+                    <div class="section-subtitle">依教室實際情況調整工作與人數，再亂數分配。</div>
+                </div>
+                <div class="action-btns">
+                    <button class="btn" onclick="exportToExcel()">儲存 Excel</button>
+                    <button class="btn" onclick="triggerCleanImport()">載入掃地 Excel/CSV</button>
+                    <button class="btn" onclick="printReport('clean')">僅列印此表</button>
+                    <button class="btn btn-primary" onclick="printReport('all')">列印全部結果</button>
+                </div>
+            </div>
+
+            <div class="options-bar">
+                <label class="option-box">
+                    <input type="checkbox" id="clean-single-job" checked>
+                    每人只分配 1 項掃地工作
+                </label>
+                <label class="option-box">
+                    <input type="checkbox" id="clean-sub-no-dup" checked>
+                    掃地代理人不重複指派
+                </label>
+            </div>
+
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="randomAssignClean()">亂數分配未指定工作與代理人</button>
+                <button class="btn" onclick="autoFillCleanQuota()">依人數自動補足名額</button>
+                <button class="btn" onclick="clearCleanAssign()">清除全部分配</button>
+                <button class="btn" onclick="clearCleanSubOnly()">僅清除代理人</button>
+                <button class="btn" onclick="resetDefaultClean()">恢復預設工作</button>
+            </div>
+
+            <div class="add-form">
+                <input type="text" id="add-clean-name" class="add-input" placeholder="新增工作，例如：自然教室外掃區">
+                <select id="add-clean-cat" class="add-select">
+                    <option value="教室內掃">教室內掃</option>
+                    <option value="走廊與公共區">走廊與公共區</option>
+                    <option value="垃圾與回收">垃圾與回收</option>
+                    <option value="外掃區">外掃區</option>
+                    <option value="生物實驗室">生物實驗室</option>
+                    <option value="教室及外掃區">教室及外掃區</option>
+                    <option value="值日生">值日生</option>
+                </select>
+                <button class="btn" onclick="addCleanTask()">新增</button>
+            </div>
+
+            <div class="task-list" id="clean-list"></div>
+
+            <div class="stats-banner" id="clean-stats">
+                學生人數：25 人 | 工作名額：29 人次 / 已分配 0 人次 / 涉及 0 位學生
+            </div>
+
+            <div class="result-section" id="clean-result-section">
+                <div class="result-title">掃地工作分配表</div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 18%;">區域</th>
+                            <th style="width: 27%;">工作</th>
+                            <th style="width: 27.5%;">正職座號/姓名</th>
+                            <th style="width: 27.5%;">職務代理人</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clean-result-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let students = Array.from({length: 25}, (_, i) => `${String(i + 1).padStart(2, '0')}號 學生${i + 1}`);
+
+    let officerRules = []; 
+    let cleanRules = [];   
+
+    let officerTasks = [
+        { id: 'off_1', name: '班長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_2', name: '副班長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_3', name: '學藝股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_4', name: '風紀股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_5', name: '衛生股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_6', name: '環保股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_7', name: '體育股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_8', name: '事務股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_9', name: '資訊股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_10', name: '輔導股長', category: '班級幹部', count: 1, assigned: [], substitute: [] },
+        { id: 'off_11', name: '國文小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_12', name: '英文小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_13', name: '數學小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_14', name: '自然小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_15', name: '歷史小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_16', name: '地理小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_17', name: '公民小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_18', name: '健康小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_19', name: '體育小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_20', name: '童軍小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_21', name: '家政小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_22', name: '輔導活動小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_23', name: '音樂小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_24', name: '美術小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_25', name: '表演藝術小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_26', name: '資訊小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_27', name: '生活科技小老師', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_28', name: '行動方程式', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_29', name: '金融生活', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_30', name: '悅讀E起來', category: '科目小老師', count: 1, assigned: [], substitute: [] },
+        { id: 'off_31', name: '收表單、聯絡簿', category: '收發長', count: 2, assigned: [], substitute: [] }
+    ];
+
+    let cleanTasks = [
+        { id: 'cln_1', name: '教室前半部掃地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_2', name: '教室後半部掃地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_3', name: '教室前半部拖地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_4', name: '教室後半部拖地', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_5', name: '黑板與講桌', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_6', name: '窗戶台、前後門', category: '教室內掃', count: 2, assigned: [], substitute: [] },
+        { id: 'cln_7', name: '置物櫃與教室後方', category: '教室內掃', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_8', name: '窗戶與窗溝', category: '教室內掃', count: 2, assigned: [], substitute: [] },
+        { id: 'cln_9', name: '掃具間整理+倒垃圾', category: '教室內掃', count: 2, assigned: [], substitute: [] },
+        { id: 'cln_10', name: '教室外走廊掃地', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_11', name: '教室外走廊拖地', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_12', name: '洗手台與週邊地面', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_13', name: '洗手台與週邊地面', category: '走廊與公共區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_14', name: '701旁空地/花台', category: '外掃區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_15', name: '901旁空地', category: '外掃區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_16', name: '生物實驗室掃地/整理垃圾', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_17', name: '生物實驗室拖地/整理垃圾', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_18', name: '桌面/黑板', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_19', name: '洗手台/門窗', category: '生物實驗室', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_20', name: '開關門窗/開關冷氣/清冰箱(約一週一次)', category: '教室及外掃區', count: 1, assigned: [], substitute: [] },
+        { id: 'cln_21', name: '值日生(3人)', category: '值日生', count: 3, assigned: [], substitute: [] }
+    ];
+
+    function toggleRulePanel() {
+        const panel = document.getElementById('rule-panel');
+        panel.classList.toggle('active');
+    }
+
+    function extractPureName(str) {
+        if (!str) return '';
+        let s = String(str).trim();
+        s = s.replace(/^(班長|副班長|學藝股長|風紀股長|衛生股長|環保股長|體育股長|事務股長|資訊股長|輔導股長|股長|小老師|幹部|當選|職稱)+/g, '');
+        s = s.replace(/^\d+號?/g, '');
+        s = s.replace(/(號|當選)$/g, '');
+        return s.trim();
+    }
+
+    function matchExistingStudent(seat, rawString) {
+        let matched = null;
+        let num = '';
+        if (seat) {
+            const m = String(seat).match(/\d+/);
+            if (m) num = m[0].padStart(2, '0');
+        } else if (rawString) {
+            const m = String(rawString).match(/\d+/);
+            if (m) num = m[0].padStart(2, '0');
+        }
+
+        if (num) {
+            matched = students.find(s => s.startsWith(`${num}號`));
+        }
+
+        if (!matched && rawString) {
+            const pureName = extractPureName(rawString);
+            if (pureName.length >= 2) {
+                matched = students.find(s => s.includes(pureName));
+            }
+        }
+
+        return matched;
+    }
+
+    function triggerStudentsImport() { document.getElementById('file-students-input').click(); }
+    function triggerOfficersImport() { document.getElementById('file-officers-input').click(); }
+    function triggerCleanImport() { document.getElementById('file-clean-input').click(); }
+
+    function handleStudentsImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(worksheet, {defval: ''});
+            
+            const studentList = [];
+
+            rows.forEach((row, idx) => {
+                let seatNum = '';
+                let nameStr = '';
+
+                Object.keys(row).forEach(key => {
+                    const cleanKey = key.trim();
+                    let val = String(row[key]).trim();
+                    if (cleanKey.includes('座號') || cleanKey.includes('號碼') || cleanKey === '號') {
+                        const m = val.match(/\d+/);
+                        if (m) seatNum = m[0].padStart(2, '0');
+                    } else if (cleanKey.includes('姓名') || cleanKey.includes('學生') || cleanKey === '名字') {
+                        nameStr = val;
+                    }
+                });
+
+                if (!nameStr) {
+                    const values = Object.values(row).map(v => String(v).trim()).filter(Boolean);
+                    if (values.length >= 2) {
+                        const m = String(values[0]).match(/\d+/);
+                        if (m) seatNum = m[0].padStart(2, '0');
+                        nameStr = values[1];
+                    } else if (values.length === 1) {
+                        nameStr = values[0];
+                    }
+                }
+
+                if (nameStr) {
+                    const pure = extractPureName(nameStr);
+                    if (pure) {
+                        const seatFormatted = seatNum ? seatNum : String(idx + 1).padStart(2, '0');
+                        studentList.push(`${seatFormatted}號 ${pure}`);
+                    }
+                }
+            });
+
+            if (studentList.length > 0) {
+                students = Array.from(new Set(studentList)).sort();
+                renderAll();
+                alert(`全班學生名單匯入成功！共 ${students.length} 位學生。`);
+            } else {
+                alert('無法解析學生名單，請確認 Excel 包含「座號」與「姓名」欄位。');
+            }
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function handleOfficersImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(worksheet, {defval: ''});
+
+            officerTasks.forEach(t => { t.assigned = []; t.substitute = []; });
+
+            let matchCount = 0;
+            rows.forEach(row => {
+                let seatNum = '';
+                let nameStr = '';
+                let dutyTitle = '';
+                let subStr = '';
+
+                Object.keys(row).forEach(key => {
+                    const cleanKey = key.trim();
+                    let val = String(row[key]).trim();
+
+                    if (cleanKey.includes('當選座號') || cleanKey.includes('正職座號') || cleanKey === '座號') {
+                        seatNum = val;
+                    } else if (cleanKey.includes('當選姓名') || cleanKey.includes('正職姓名') || cleanKey === '姓名') {
+                        nameStr = val;
+                    } else if (cleanKey.includes('幹部職稱') || cleanKey.includes('當選職稱') || cleanKey.includes('職務') || cleanKey === '職稱' || cleanKey === '幹部') {
+                        dutyTitle = val;
+                    } else if (cleanKey.includes('代理人') || cleanKey.includes('代理')) {
+                        subStr = val;
+                    }
+                });
+
+                if (dutyTitle) {
+                    const matchedStudent = matchExistingStudent(seatNum, nameStr);
+                    
+                    let task = officerTasks.find(t => t.name === dutyTitle);
+                    if (!task) {
+                        task = { id: 'off_' + Date.now() + Math.random(), name: dutyTitle, category: '班級幹部', count: 1, assigned: [], substitute: [] };
+                        officerTasks.push(task);
+                    }
+
+                    if (matchedStudent && !task.assigned.includes(matchedStudent)) {
+                        task.assigned.push(matchedStudent);
+                        matchCount++;
+                    }
+
+                    if (subStr) {
+                        const matchedSub = matchExistingStudent('', subStr);
+                        if (matchedSub && !task.substitute.includes(matchedSub)) {
+                            task.substitute.push(matchedSub);
+                        }
+                    }
+                }
+            });
+
+            renderAll();
+            alert(`幹部名單載入成功！已完成 ${matchCount} 位幹部對應，全班總人數保持 ${students.length} 人。`);
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function handleCleanImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(worksheet, {defval: ''});
+
+            cleanTasks.forEach(t => { t.assigned = []; t.substitute = []; });
+
+            let matchCount = 0;
+            rows.forEach(row => {
+                let seatNum = '';
+                let nameStr = '';
+                let jobTitle = '';
+                let subStr = '';
+
+                Object.keys(row).forEach(key => {
+                    const cleanKey = key.trim();
+                    let val = String(row[key]).trim();
+
+                    if (cleanKey.includes('座號')) seatNum = val;
+                    else if (cleanKey.includes('姓名')) nameStr = val;
+                    else if (cleanKey.includes('掃地工作') || cleanKey.includes('工作') || cleanKey === '項目') jobTitle = val;
+                    else if (cleanKey.includes('代理')) subStr = val;
+                });
+
+                if (jobTitle) {
+                    const matchedStudent = matchExistingStudent(seatNum, nameStr);
+                    
+                    let task = cleanTasks.find(t => t.name === jobTitle);
+                    if (!task) {
+                        task = { id: 'cln_' + Date.now() + Math.random(), name: jobTitle, category: '教室內掃', count: 1, assigned: [], substitute: [] };
+                        cleanTasks.push(task);
+                    }
+
+                    if (matchedStudent && !task.assigned.includes(matchedStudent)) {
+                        task.assigned.push(matchedStudent);
+                        matchCount++;
+                    }
+
+                    if (subStr) {
+                        const matchedSub = matchExistingStudent('', subStr);
+                        if (matchedSub && !task.substitute.includes(matchedSub)) {
+                            task.substitute.push(matchedSub);
+                        }
+                    }
+                }
+            });
+
+            renderAll();
+            alert(`掃地名單載入成功！已完成 ${matchCount} 項工作對應，全班總人數保持 ${students.length} 人。`);
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function exportToExcel() {
+        const studentRows = students.map(s => {
+            const parts = s.split('號 ');
+            const seat = parts.length > 1 ? parts[0] : '';
+            const name = parts.length > 1 ? parts[1] : s;
+
+            const officer = officerTasks.find(t => t.assigned.includes(s));
+            const officerSub = officerTasks.find(t => t.substitute.includes(s));
+            const clean = cleanTasks.find(t => t.assigned.includes(s));
+            const cleanSub = cleanTasks.find(t => t.substitute.includes(s));
+
+            return {
+                '座號': seat,
+                '姓名': name,
+                '幹部職稱': officer ? officer.name : '',
+                '幹部代理人職務': officerSub ? `(代理 ${officerSub.name})` : '',
+                '掃地工作': clean ? clean.name : '',
+                '掃地代理人工作': cleanSub ? `(代理 ${cleanSub.name})` : ''
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(studentRows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "班級任務分配表");
+        XLSX.writeFile(workbook, `班級任務分配表_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    function renderStudents() {
+        document.getElementById('student-count').textContent = students.length;
+        const container = document.getElementById('student-tags-container');
+        container.innerHTML = students.map((s, idx) => `
+            <span class="student-tag">
+                ${s}
+                <span class="remove-btn" onclick="removeStudent(${idx})">&times;</span>
+            </span>
+        `).join('');
+        updateSelectDropdowns();
+    }
+
+    function removeStudent(index) {
+        const removed = students.splice(index, 1)[0];
+        officerTasks.forEach(t => {
+            t.assigned = t.assigned.filter(s => s !== removed);
+            t.substitute = t.substitute.filter(s => s !== removed);
+        });
+        cleanTasks.forEach(t => {
+            t.assigned = t.assigned.filter(s => s !== removed);
+            t.substitute = t.substitute.filter(s => s !== removed);
+        });
+        renderAll();
+    }
+
+    function resetDefaultStudents() {
+        students = Array.from({length: 25}, (_, i) => `${String(i + 1).padStart(2, '0')}號 學生${i + 1}`);
+        officerTasks.forEach(t => { t.assigned = []; t.substitute = []; });
+        cleanTasks.forEach(t => { t.assigned = []; t.substitute = []; });
+        renderAll();
+    }
+
+    function updateSelectDropdowns() {
+        const studentOpts = students.map(s => `<option value="${s}">${s}</option>`).join('');
+        
+        document.querySelectorAll('.task-select').forEach(select => {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">選擇學生</option>' + studentOpts;
+            select.value = currentVal;
+        });
+
+        document.getElementById('rule-officer-student').innerHTML = studentOpts;
+        document.getElementById('rule-clean-student').innerHTML = studentOpts;
+        document.getElementById('rule-officer-task').innerHTML = officerTasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        document.getElementById('rule-clean-task').innerHTML = cleanTasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    }
+
+    function addOfficerRule() {
+        const student = document.getElementById('rule-officer-student').value;
+        const type = document.getElementById('rule-officer-type').value;
+        const taskId = document.getElementById('rule-officer-task').value;
+        if (!student || !taskId) return;
+        officerRules.push({ student, type, taskId });
+        renderRules();
+    }
+
+    function addCleanRule() {
+        const student = document.getElementById('rule-clean-student').value;
+        const type = document.getElementById('rule-clean-type').value;
+        const taskId = document.getElementById('rule-clean-task').value;
+        if (!student || !taskId) return;
+        cleanRules.push({ student, type, taskId });
+        renderRules();
+    }
+
+    function removeOfficerRule(idx) { officerRules.splice(idx, 1); renderRules(); }
+    function removeCleanRule(idx) { cleanRules.splice(idx, 1); renderRules(); }
+
+    function renderRules() {
+        const offList = document.getElementById('officer-rule-list');
+        offList.innerHTML = officerRules.map((r, i) => {
+            const task = officerTasks.find(t => t.id === r.taskId);
+            const typeStr = r.type === 'must' ? '必選' : '避開';
+            return `<span class="assigned-tag">${r.student} 【${typeStr}】 ${task ? task.name : ''} <span class="remove-btn" onclick="removeOfficerRule(${i})">&times;</span></span>`;
+        }).join('');
+
+        const clnList = document.getElementById('clean-rule-list');
+        clnList.innerHTML = cleanRules.map((r, i) => {
+            const task = cleanTasks.find(t => t.id === r.taskId);
+            const typeStr = r.type === 'must' ? '必選' : '避開';
+            return `<span class="sub-tag">${r.student} 【${typeStr}】 ${task ? task.name : ''} <span class="remove-btn" onclick="removeCleanRule(${i})">&times;</span></span>`;
+        }).join('');
+    }
+
+    function renderOfficers() {
+        const list = document.getElementById('officers-list');
+        list.innerHTML = officerTasks.map(t => {
+            const isFull = t.assigned.length >= t.count;
+            const statusStr = isFull ? '已配滿' : (t.assigned.length > 0 ? `已配 ${t.assigned.length}/${t.count}` : '尚未分配');
+            
+            const assignedHtml = t.assigned.map(s => `
+                <span class="assigned-tag">${s}<span class="remove-btn" onclick="removeOfficerAssigned('${t.id}', '${s}')">&times;</span></span>
+            `).join('');
+            const subHtml = t.substitute.map(s => `
+                <span class="sub-tag">代: ${s}<span class="remove-btn" onclick="removeOfficerSub('${t.id}', '${s}')">&times;</span></span>
+            `).join('');
+
+            return `
+                <div class="task-card">
+                    <div class="task-info">
+                        <div class="task-name">${t.name}</div>
+                        <div class="task-category">${t.category}</div>
+                    </div>
+                    <div class="task-count-box">
+                        <input type="number" min="1" max="10" value="${t.count}" class="count-input" onchange="updateOfficerCount('${t.id}', this.value)">
+                        <span class="status-text">${statusStr}</span>
+                    </div>
+                    <div>${assignedHtml} ${subHtml}</div>
+                    <div class="task-controls">
+                        <select class="task-select" id="select-${t.id}">
+                            <option value="">選擇學生</option>
+                            ${students.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        <button class="btn btn-sm" onclick="addOfficerStudent('${t.id}')">+正職</button>
+                        <button class="btn btn-sm" onclick="addOfficerSub('${t.id}')">+代理</button>
+                        <button class="btn btn-sm" onclick="editOfficerTask('${t.id}')">✏️ 編輯</button>
+                        <button class="btn btn-sm" onclick="deleteOfficerTask('${t.id}')">刪除</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const tbody = document.getElementById('officer-result-body');
+        tbody.innerHTML = officerTasks.map(t => `
+            <tr>
+                <td>${t.category}</td>
+                <td>${t.name}</td>
+                <td>${t.assigned.join('、')}</td>
+                <td>${t.substitute.join('、')}</td>
+            </tr>
+        `).join('');
+
+        const totalQuota = officerTasks.reduce((sum, t) => sum + t.count, 0);
+        const totalAssigned = officerTasks.reduce((sum, t) => sum + t.assigned.length, 0);
+        const uniqueStudents = new Set(officerTasks.flatMap(t => t.assigned)).size;
+        document.getElementById('officer-stats').textContent = 
+            `學生人數：${students.length} 人 | 工作名額：${totalQuota} 人次 / 已分配 ${totalAssigned} 人次 / 涉及 ${uniqueStudents} 位學生`;
+    }
+
+    function renderClean() {
+        const list = document.getElementById('clean-list');
+        list.innerHTML = cleanTasks.map(t => {
+            const isFull = t.assigned.length >= t.count;
+            const statusStr = isFull ? '已配滿' : (t.assigned.length > 0 ? `已配 ${t.assigned.length}/${t.count}` : '尚未分配');
+            
+            const assignedHtml = t.assigned.map(s => `
+                <span class="assigned-tag">${s}<span class="remove-btn" onclick="removeCleanAssigned('${t.id}', '${s}')">&times;</span></span>
+            `).join('');
+            const subHtml = t.substitute.map(s => `
+                <span class="sub-tag">代: ${s}<span class="remove-btn" onclick="removeCleanSub('${t.id}', '${s}')">&times;</span></span>
+            `).join('');
+
+            return `
+                <div class="task-card">
+                    <div class="task-info">
+                        <div class="task-name">${t.name}</div>
+                        <div class="task-category">${t.category}</div>
+                    </div>
+                    <div class="task-count-box">
+                        <input type="number" min="1" max="10" value="${t.count}" class="count-input" onchange="updateCleanCount('${t.id}', this.value)">
+                        <span class="status-text">${statusStr}</span>
+                    </div>
+                    <div>${assignedHtml} ${subHtml}</div>
+                    <div class="task-controls">
+                        <select class="task-select" id="select-${t.id}">
+                            <option value="">選擇學生</option>
+                            ${students.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        <button class="btn btn-sm" onclick="addCleanStudent('${t.id}')">+正職</button>
+                        <button class="btn btn-sm" onclick="addCleanSub('${t.id}')">+代理</button>
+                        <button class="btn btn-sm" onclick="editCleanTask('${t.id}')">✏️ 編輯</button>
+                        <button class="btn btn-sm" onclick="deleteCleanTask('${t.id}')">刪除</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const tbody = document.getElementById('clean-result-body');
+        tbody.innerHTML = cleanTasks.map(t => `
+            <tr>
+                <td>${t.category}</td>
+                <td>${t.name}</td>
+                <td>${t.assigned.join('、')}</td>
+                <td>${t.substitute.join('、')}</td>
+            </tr>
+        `).join('');
+
+        const totalQuota = cleanTasks.reduce((sum, t) => sum + t.count, 0);
+        const totalAssigned = cleanTasks.reduce((sum, t) => sum + t.assigned.length, 0);
+        const uniqueStudents = new Set(cleanTasks.flatMap(t => t.assigned)).size;
+        document.getElementById('clean-stats').textContent = 
+            `學生人數：${students.length} 人 | 工作名額：${totalQuota} 人次 / 已分配 ${totalAssigned} 人次 / 涉及 ${uniqueStudents} 位學生`;
+    }
+
+    function updateOfficerCount(id, val) {
+        const task = officerTasks.find(t => t.id === id);
+        if (task) { task.count = parseInt(val) || 1; renderOfficers(); }
+    }
+
+    function updateCleanCount(id, val) {
+        const task = cleanTasks.find(t => t.id === id);
+        if (task) { task.count = parseInt(val) || 1; renderClean(); }
+    }
+
+    /* ✏️ 任務名稱編輯功能 */
+    function editOfficerTask(id) {
+        const task = officerTasks.find(t => t.id === id);
+        if (!task) return;
+        const newName = prompt('請輸入修改後的幹部職務名稱：', task.name);
+        if (newName !== null) {
+            const trimmed = newName.trim();
+            if (trimmed) {
+                task.name = trimmed;
+                renderOfficers();
+                renderRules();
+                updateSelectDropdowns();
+            }
+        }
+    }
+
+    function editCleanTask(id) {
+        const task = cleanTasks.find(t => t.id === id);
+        if (!task) return;
+        const newName = prompt('請輸入修改後的掃地工作/區域名稱：', task.name);
+        if (newName !== null) {
+            const trimmed = newName.trim();
+            if (trimmed) {
+                task.name = trimmed;
+                renderClean();
+                renderRules();
+                updateSelectDropdowns();
+            }
+        }
+    }
+
+    function removeOfficerAssigned(taskId, student) {
+        const task = officerTasks.find(t => t.id === taskId);
+        if (task) {
+            task.assigned = task.assigned.filter(s => s !== student);
+            renderOfficers();
+        }
+    }
+
+    function removeOfficerSub(taskId, student) {
+        const task = officerTasks.find(t => t.id === taskId);
+        if (task) {
+            task.substitute = task.substitute.filter(s => s !== student);
+            renderOfficers();
+        }
+    }
+
+    function removeCleanAssigned(taskId, student) {
+        const task = cleanTasks.find(t => t.id === taskId);
+        if (task) {
+            task.assigned = task.assigned.filter(s => s !== student);
+            renderClean();
+        }
+    }
+
+    function removeCleanSub(taskId, student) {
+        const task = cleanTasks.find(t => t.id === taskId);
+        if (task) {
+            task.substitute = task.substitute.filter(s => s !== student);
+            renderClean();
+        }
+    }
+
+    function addOfficerStudent(id) {
+        const select = document.getElementById(`select-${id}`);
+        const val = select.value;
+        if (!val) return;
+        const task = officerTasks.find(t => t.id === id);
+        if (task) {
+            if (task.substitute.includes(val)) {
+                alert('該學生已是此職務代理人，請先移除代理身分或改選其他學生！');
+                return;
+            }
+            if (task.assigned.length >= task.count) {
+                task.assigned[task.assigned.length - 1] = val;
+            } else if (!task.assigned.includes(val)) {
+                task.assigned.push(val);
+            }
+            renderOfficers();
+        }
+    }
+
+    function addOfficerSub(id) {
+        const select = document.getElementById(`select-${id}`);
+        const val = select.value;
+        if (!val) return;
+        const task = officerTasks.find(t => t.id === id);
+        if (task) {
+            if (task.assigned.includes(val)) {
+                alert('代理人不可與正職為同一人！');
+                return;
+            }
+            task.substitute = [val];
+            renderOfficers();
+        }
+    }
+
+    function addCleanStudent(id) {
+        const select = document.getElementById(`select-${id}`);
+        const val = select.value;
+        if (!val) return;
+        const task = cleanTasks.find(t => t.id === id);
+        if (task) {
+            if (task.substitute.includes(val)) {
+                alert('該學生已是此工作代理人，請先移除代理身分！');
+                return;
+            }
+            if (task.assigned.length >= task.count) {
+                task.assigned[task.assigned.length - 1] = val;
+            } else if (!task.assigned.includes(val)) {
+                task.assigned.push(val);
+            }
+            renderClean();
+        }
+    }
+
+    function addCleanSub(id) {
+        const select = document.getElementById(`select-${id}`);
+        const val = select.value;
+        if (!val) return;
+        const task = cleanTasks.find(t => t.id === id);
+        if (task) {
+            if (task.assigned.includes(val)) {
+                alert('代理人不可與正職為同一人！');
+                return;
+            }
+            task.substitute = [val];
+            renderClean();
+        }
+    }
+
+    function deleteOfficerTask(id) { 
+        officerTasks = officerTasks.filter(t => t.id !== id); 
+        officerRules = officerRules.filter(r => r.taskId !== id);
+        renderOfficers(); 
+        renderRules();
+        updateSelectDropdowns();
+    }
+    
+    function deleteCleanTask(id) { 
+        cleanTasks = cleanTasks.filter(t => t.id !== id); 
+        cleanRules = cleanRules.filter(r => r.taskId !== id);
+        renderClean(); 
+        renderRules();
+        updateSelectDropdowns();
+    }
+
+    function addOfficerTask() {
+        const nameInput = document.getElementById('add-officer-name');
+        const catInput = document.getElementById('add-officer-cat');
+        const name = nameInput.value.trim();
+        if (!name) return;
+        officerTasks.push({ id: 'off_' + Date.now(), name, category: catInput.value, count: 1, assigned: [], substitute: [] });
+        nameInput.value = '';
+        renderOfficers();
+        updateSelectDropdowns();
+    }
+
+    function addCleanTask() {
+        const nameInput = document.getElementById('add-clean-name');
+        const catInput = document.getElementById('add-clean-cat');
+        const name = nameInput.value.trim();
+        if (!name) return;
+        cleanTasks.push({ id: 'cln_' + Date.now(), name, category: catInput.value, count: 1, assigned: [], substitute: [] });
+        nameInput.value = '';
+        renderClean();
+        updateSelectDropdowns();
+    }
+
+    function clearOfficersAssign() { 
+        officerTasks.forEach(t => { t.assigned = []; t.substitute = []; }); 
+        renderOfficers(); 
+    }
+    
+    function clearOfficersSubOnly() { 
+        officerTasks.forEach(t => { t.substitute = []; }); 
+        renderOfficers(); 
+    }
+
+    function clearCleanAssign() { 
+        cleanTasks.forEach(t => { t.assigned = []; t.substitute = []; }); 
+        renderClean(); 
+    }
+
+    function clearCleanSubOnly() { 
+        cleanTasks.forEach(t => { t.substitute = []; }); 
+        renderClean(); 
+    }
+
+    function resetDefaultOfficers() { location.reload(); }
+    function resetDefaultClean() { location.reload(); }
+
+    /* ========== 核心隨機指派 ========== */
+
+    function randomAssignOfficers() {
+        const noDupTeachers = document.getElementById('teacher-no-dup').checked;
+        const noDupSub = document.getElementById('officer-sub-no-dup').checked;
+
+        officerRules.filter(r => r.type === 'must').forEach(r => {
+            const task = officerTasks.find(t => t.id === r.taskId);
+            if (task && task.assigned.length < task.count && !task.assigned.includes(r.student)) {
+                task.assigned.push(r.student);
+            }
+        });
+
+        const teacherAssignedCount = new Map();
+        students.forEach(s => teacherAssignedCount.set(s, 0));
+        officerTasks.filter(t => t.category === '科目小老師').forEach(t => {
+            t.assigned.forEach(s => {
+                teacherAssignedCount.set(s, (teacherAssignedCount.get(s) || 0) + 1);
+            });
+        });
+
+        officerTasks.forEach(task => {
+            if (task.assigned.length < task.count) {
+                const avoids = officerRules.filter(r => r.taskId === task.id && r.type === 'avoid').map(r => r.student);
+                let candidates = students.filter(s => !avoids.includes(s) && !task.assigned.includes(s));
+                candidates.sort(() => Math.random() - 0.5);
+
+                if (task.category === '科目小老師' && noDupTeachers) {
+                    candidates.sort((a, b) => (teacherAssignedCount.get(a) || 0) - (teacherAssignedCount.get(b) || 0));
+                }
+
+                while (task.assigned.length < task.count && candidates.length > 0) {
+                    const chosen = candidates.shift();
+                    task.assigned.push(chosen);
+                    if (task.category === '科目小老師') {
+                        teacherAssignedCount.set(chosen, (teacherAssignedCount.get(chosen) || 0) + 1);
+                    }
+                }
+            }
+        });
+
+        const subCountMap = new Map();
+        students.forEach(s => subCountMap.set(s, 0));
+        
+        officerTasks.forEach(t => {
+            t.substitute.forEach(s => {
+                subCountMap.set(s, (subCountMap.get(s) || 0) + 1);
+            });
+        });
+
+        officerTasks.forEach(task => {
+            if (task.substitute.length === 0) {
+                let candidatePool = students.filter(s => !task.assigned.includes(s));
+                candidatePool.sort(() => Math.random() - 0.5);
+
+                if (noDupSub) {
+                    candidatePool.sort((a, b) => (subCountMap.get(a) || 0) - (subCountMap.get(b) || 0));
+                }
+
+                if (candidatePool.length > 0) {
+                    const chosen = candidatePool[0];
+                    task.substitute.push(chosen);
+                    subCountMap.set(chosen, (subCountMap.get(chosen) || 0) + 1);
+                }
+            }
+        });
+
+        renderOfficers();
+    }
+
+    function randomAssignClean() {
+        const singleJob = document.getElementById('clean-single-job').checked;
+        const noDupSub = document.getElementById('clean-sub-no-dup').checked;
+
+        const assignedClean = new Set(cleanTasks.flatMap(t => t.assigned));
+        let availableForMain = singleJob 
+            ? students.filter(s => !assignedClean.has(s)) 
+            : [...students];
+
+        cleanRules.filter(r => r.type === 'must').forEach(r => {
+            const task = cleanTasks.find(t => t.id === r.taskId);
+            if (task && task.assigned.length < task.count && !task.assigned.includes(r.student)) {
+                task.assigned.push(r.student);
+                if (singleJob) {
+                    availableForMain = availableForMain.filter(s => s !== r.student);
+                    assignedClean.add(r.student);
+                }
+            }
+        });
+
+        availableForMain.sort(() => Math.random() - 0.5);
+        cleanTasks.forEach(task => {
+            const avoids = cleanRules.filter(r => r.taskId === task.id && r.type === 'avoid').map(r => r.student);
+            let i = availableForMain.length - 1;
+            while (task.assigned.length < task.count && i >= 0) {
+                const candidate = availableForMain[i];
+                if (!avoids.includes(candidate) && !task.assigned.includes(candidate)) {
+                    task.assigned.push(candidate);
+                    availableForMain.splice(i, 1);
+                }
+                i--;
+            }
+        });
+
+        const subCountMap = new Map();
+        students.forEach(s => subCountMap.set(s, 0));
+        cleanTasks.forEach(t => {
+            t.substitute.forEach(s => {
+                subCountMap.set(s, (subCountMap.get(s) || 0) + 1);
+            });
+        });
+
+        cleanTasks.forEach(task => {
+            if (task.substitute.length === 0) {
+                let candidatePool = students.filter(s => !task.assigned.includes(s));
+                candidatePool.sort(() => Math.random() - 0.5);
+
+                if (noDupSub) {
+                    candidatePool.sort((a, b) => (subCountMap.get(a) || 0) - (subCountMap.get(b) || 0));
+                }
+
+                if (candidatePool.length > 0) {
+                    const chosen = candidatePool[0];
+                    task.substitute.push(chosen);
+                    subCountMap.set(chosen, (subCountMap.get(chosen) || 0) + 1);
+                }
+            }
+        });
+
+        renderClean();
+    }
+
+    function autoFillCleanQuota() {
+        const currentQuota = cleanTasks.reduce((sum, t) => sum + t.count, 0);
+        const diff = students.length - currentQuota;
+        if (diff === 0) return;
+        if (diff > 0) {
+            for (let k = 0; k < diff; k++) cleanTasks[k % cleanTasks.length].count++;
+        } else {
+            let toReduce = Math.abs(diff), i = 0;
+            while (toReduce > 0 && i < 1000) {
+                if (cleanTasks[i % cleanTasks.length].count > 1) {
+                    cleanTasks[i % cleanTasks.length].count--;
+                    toReduce--;
+                }
+                i++;
+            }
+        }
+        renderClean();
+    }
+
+    function printReport(mode) {
+        document.body.classList.remove('print-officers-only', 'print-clean-only');
+        if (mode === 'officers') {
+            document.body.classList.add('print-officers-only');
+        } else if (mode === 'clean') {
+            document.body.classList.add('print-clean-only');
+        }
+        window.print();
+        setTimeout(() => {
+            document.body.classList.remove('print-officers-only', 'print-clean-only');
+        }, 500);
+    }
+
+    function renderAll() { 
+        renderStudents(); 
+        renderOfficers(); 
+        renderClean(); 
+        renderRules();
+    }
+
+    renderAll();
+</script>
+
+</body>
+</html>

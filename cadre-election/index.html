@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桃園市立楊光國中小 701 班級幹部遴選與紀錄系統</title>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --success-color: #10b981;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1450px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: var(--primary-dark);
+        }
+
+        .class-info-input {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .class-info-input label {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .class-info-input input {
+            padding: 7px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 360px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 幹部清單導航 */
+        .officer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .officer-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .officer-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .officer-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .officer-btn .badge {
+            font-size: 0.85rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .officer-btn.active .badge {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 選舉區域 */
+        .duty-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 0.92rem;
+            color: #1e40af;
+            line-height: 1.5;
+        }
+
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .seat-btn {
+            padding: 10px 6px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .seat-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .seat-btn.selected {
+            background: #dbeafe;
+            border-color: var(--primary-color);
+            color: var(--primary-dark);
+            font-weight: bold;
+        }
+
+        .candidates-section {
+            margin-top: 15px;
+        }
+
+        .candidate-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .candidate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #fff;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .candidate-item.winner {
+            border: 2px solid var(--success-color);
+            background: #ecfdf5;
+        }
+
+        .candidate-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .candidate-name {
+            font-size: 1.05rem;
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        .vote-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.88rem;
+            color: #4b5563;
+        }
+
+        .vote-input-group input {
+            width: 110px;
+            padding: 5px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .candidate-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 按鈕樣式 */
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-success:hover { background: #059669; }
+        
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); }
+        .btn-outline:hover { background: #f1f5f9; }
+
+        .download-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        /* 總覽表格 */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        .summary-table th, .summary-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .summary-table th {
+            background: #f8fafc;
+        }
+
+        .empty-tip {
+            color: #94a3b8;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* 名冊編輯彈窗 Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .roster-textarea {
+            width: 100%;
+            height: 220px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <a href="../index.html" class="btn" style="background:#475569;color:#fff;text-decoration:none;padding:6px 14px;border-radius:6px;font-weight:600">⬅️ 返回大廳四</a>
+            <h1 id="headerTitle">班級幹部遴選與紀錄系統</h1>
+        </div>
+        <div class="class-info-input">
+            <label for="class-name">班級：</label>
+            <input type="text" id="class-name" value="701" style="width: 70px;">
+            
+            <label for="total-students">最大座號：</label>
+            <input type="number" id="total-students" value="30" min="1" max="50" style="width: 60px;" onchange="renderSeats()">
+            
+            <label for="absent-seats">缺號座號：</label>
+            <input type="text" id="absent-seats" placeholder="例: 13, 24" style="width: 110px;" oninput="saveAbsentSeatsAndRender()">
+            
+            <button class="btn btn-primary" onclick="openRosterModal()">✏️ 匯入 / 編輯名冊</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 左側：幹部列表 -->
+        <div class="card">
+            <h3>選擇幹部職務</h3>
+            <div class="officer-list" id="officer-list"></div>
+        </div>
+
+        <!-- 中間：候選人點選與遴選 -->
+        <div class="card">
+            <h2 id="current-officer-title">請選擇幹部</h2>
+            <div class="duty-box" id="current-officer-duty">職責說明會顯示於此。</div>
+
+            <div>
+                <h4 style="margin-bottom: 8px;">1. 點擊學生加入候選（可複選，自動跳過缺號）：</h4>
+                <div class="seat-grid" id="seat-grid"></div>
+            </div>
+
+            <div class="candidates-section">
+                <h4 style="margin-bottom: 8px;">2. 候選人名單、得票數/得票率與當選指定：</h4>
+                <div class="candidate-card-list" id="candidate-list">
+                    <div class="empty-tip">請先點擊上方學生加入候選人</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：當選總覽與下載 -->
+        <div class="card">
+            <h3>當選總覽名單</h3>
+            <div style="flex-grow: 1; overflow-y: auto;">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>幹部職稱</th>
+                            <th>當選者</th>
+                            <th>得票數/率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-tbody"></tbody>
+                </table>
+            </div>
+            <button class="btn btn-success download-btn" onclick="downloadCSV()">下載完整幹部名單 (CSV/Excel)</button>
+            <button class="btn btn-outline" style="width: 100%;" onclick="downloadTXT()">下載文字紀錄 (TXT)</button>
+        </div>
+    </div>
+
+    <!-- 編輯名冊的 Modal 彈窗 -->
+    <div class="modal-backdrop" id="roster-modal">
+        <div class="modal-card">
+            <h3>快速匯入／編輯學生名冊</h3>
+            <p style="font-size: 0.88rem; color: #64748b; line-height: 1.4;">
+                可以直接從 Excel 複製全班姓名貼上於下方（<strong>一行一個姓名</strong>，系統會自動按 1~N 座號對應）；<br>
+                或者每行輸入「<code>座號,姓名</code>」（例如：<code>1,王小明</code>）。若缺號可留空行或寫「<code>13,缺號</code>」。
+            </p>
+            <textarea id="roster-input" class="roster-textarea" placeholder="1號姓名&#10;2號姓名&#10;3號姓名&#10;..."></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-outline" onclick="closeRosterModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveRoster()">儲存名冊</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const officers = [
+            { id: 'president', title: '班長', duty: '受導師指導處理班務；上課提醒老師；集合、整隊帶隊；與風紀共同維持秩序；代表班級出席會報。' },
+            { id: 'vice_president', title: '副班長', duty: '代理班長職務；填寫班會紀錄簿與點名簿；負責上課點名，放學後送回學務處；登記每日出缺勤狀況。' },
+            { id: 'discipline', title: '風紀股長', duty: '維持班級秩序；代理副班長職務；同學若有校內外違規行為，負有向老師報告之責。' },
+            { id: 'academic', title: '學藝股長', duty: '設計佈置教室與編製壁報；保管班級公用圖書；填寫教室日誌；收發作業簿並送交各科教師。' },
+            { id: 'sports', title: '體育股長', duty: '領取與保管體育器材；協助健康檢查（身高體重視力等）；辦理班際康樂比賽與運動會。' },
+            { id: 'general_affairs', title: '事務股長', duty: '保管班級公務；統計學期末班費；教室花台澆水與雜草整理；開關電源維護節約能源；定期回報冷氣度數。' },
+            { id: 'environmental', title: '環保股長', duty: '排定值日生與填寫黑板紀錄；領取粉筆等用品；放學門窗上鎖；領導班級勞動服務；午餐工作聯繫與監督。' },
+            { id: 'info', title: '資訊股長', duty: '班級資訊設備之管理、維護與簡易維修；資訊設備故障通報。' },
+            { id: 'hygiene', title: '衛生股長', duty: '領取打掃用具；分配並檢查同學打掃工作；督導垃圾分類與資源回收。' },
+            { id: 'counseling', title: '輔導股長', duty: '記載輔導活動記錄簿；協助輔導活動上課事宜；協助整理輔導資料與測驗；協助同學日常生活及學業困難。' }
+        ];
+
+        let currentOfficerIndex = 0;
+        let selectionData = {};
+        let studentRoster = {};
+        let absentSeatsList = []; // 儲存缺號座號陣列 [13, 24]
+
+        function init() {
+            officers.forEach(o => {
+                selectionData[o.id] = { candidates: [], winner: null };
+            });
+
+            loadDataFromStorage();
+            renderOfficerList();
+            renderSeats();
+            switchOfficer(0);
+        }
+
+        // 解析缺號輸入框
+        function parseAbsentSeats() {
+            const raw = document.getElementById('absent-seats').value.trim();
+            if (!raw) return [];
+            return raw.split(/[,，\s]+/)
+                      .map(s => parseInt(s.trim()))
+                      .filter(n => !isNaN(n));
+        }
+
+        function saveAbsentSeatsAndRender() {
+            absentSeatsList = parseAbsentSeats();
+            localStorage.setItem('yg_absent_seats', document.getElementById('absent-seats').value);
+            renderSeats();
+        }
+
+        function getStudentDisplayName(seatNum) {
+            const padSeat = String(seatNum).padStart(2, '0');
+            const name = studentRoster[seatNum];
+            return name ? `${padSeat}號 ${name}` : `${padSeat}號`;
+        }
+
+        function openRosterModal() {
+            const total = parseInt(document.getElementById('total-students').value) || 30;
+            let textLines = [];
+            for (let i = 1; i <= total; i++) {
+                textLines.push(studentRoster[i] || '');
+            }
+            document.getElementById('roster-input').value = textLines.join('\n');
+            document.getElementById('roster-modal').style.display = 'flex';
+        }
+
+        function closeRosterModal() {
+            document.getElementById('roster-modal').style.display = 'none';
+        }
+
+        function saveRoster() {
+            const rawText = document.getElementById('roster-input').value.trim();
+            const lines = rawText.split('\n');
+            
+            studentRoster = {};
+            lines.forEach((line, index) => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                if (trimmed.includes(',') || trimmed.includes('，')) {
+                    const parts = trimmed.split(/[,，]/);
+                    const seat = parseInt(parts[0]);
+                    const name = parts[1] ? parts[1].trim() : '';
+                    if (!isNaN(seat) && name && name !== '缺號') {
+                        studentRoster[seat] = name;
+                    }
+                } else {
+                    const seat = index + 1;
+                    if (trimmed !== '缺號') {
+                        studentRoster[seat] = trimmed;
+                    }
+                }
+            });
+
+            const maxSeat = Math.max(...Object.keys(studentRoster).map(Number), 30);
+            document.getElementById('total-students').value = maxSeat;
+
+            localStorage.setItem('yg_student_roster', JSON.stringify(studentRoster));
+
+            closeRosterModal();
+            renderSeats();
+            renderCandidates();
+            renderOfficerList();
+            renderSummary();
+        }
+
+        function loadDataFromStorage() {
+            // 載入名冊
+            const savedRoster = localStorage.getItem('yg_student_roster');
+            if (savedRoster) {
+                try {
+                    studentRoster = JSON.parse(savedRoster);
+                    const maxSeat = Math.max(...Object.keys(studentRoster).map(Number), 30);
+                    document.getElementById('total-students').value = maxSeat;
+                } catch(e) { studentRoster = {}; }
+            }
+
+            // 載入缺號紀錄
+            const savedAbsent = localStorage.getItem('yg_absent_seats');
+            if (savedAbsent) {
+                document.getElementById('absent-seats').value = savedAbsent;
+                absentSeatsList = parseAbsentSeats();
+            }
+        }
+
+        function renderOfficerList() {
+            const listEl = document.getElementById('officer-list');
+            listEl.innerHTML = '';
+            
+            officers.forEach((off, idx) => {
+                const data = selectionData[off.id];
+                const btn = document.createElement('div');
+                btn.className = `officer-btn ${idx === currentOfficerIndex ? 'active' : ''}`;
+                btn.onclick = () => switchOfficer(idx);
+
+                let statusBadge = '未選';
+                if (data.winner) {
+                    statusBadge = getStudentDisplayName(data.winner.seat);
+                } else if (data.candidates.length > 0) {
+                    statusBadge = `${data.candidates.length}人候選`;
+                }
+
+                btn.innerHTML = `
+                    <span>${off.title}</span>
+                    <span class="badge">${statusBadge}</span>
+                `;
+                listEl.appendChild(btn);
+            });
+        }
+
+        function switchOfficer(index) {
+            currentOfficerIndex = index;
+            const off = officers[index];
+            
+            document.getElementById('current-officer-title').innerText = `${off.title} - 選拔`;
+            document.getElementById('current-officer-duty').innerText = `【職責】：${off.duty}`;
+
+            renderOfficerList();
+            updateSeatSelectionState();
+            renderCandidates();
+        }
+
+        function renderSeats() {
+            const grid = document.getElementById('seat-grid');
+            const total = parseInt(document.getElementById('total-students').value) || 30;
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= total; i++) {
+                // 如果是缺號座號，直接跳過不顯示按鈕
+                if (absentSeatsList.includes(i)) continue;
+
+                const btn = document.createElement('button');
+                btn.className = 'seat-btn';
+                btn.id = `seat-btn-${i}`;
+                btn.innerText = getStudentDisplayName(i);
+                btn.title = getStudentDisplayName(i);
+                btn.onclick = () => toggleCandidate(i);
+                grid.appendChild(btn);
+            }
+            updateSeatSelectionState();
+        }
+
+        function updateSeatSelectionState() {
+            const off = officers[currentOfficerIndex];
+            const currentCandidates = selectionData[off.id].candidates.map(c => c.seat);
+            const total = parseInt(document.getElementById('total-students').value) || 30;
+
+            for (let i = 1; i <= total; i++) {
+                const btn = document.getElementById(`seat-btn-${i}`);
+                if (btn) {
+                    if (currentCandidates.includes(i)) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                }
+            }
+        }
+
+        function toggleCandidate(seatNum) {
+            const off = officers[currentOfficerIndex];
+            const list = selectionData[off.id].candidates;
+            const index = list.findIndex(c => c.seat === seatNum);
+
+            if (index > -1) {
+                list.splice(index, 1);
+                if (selectionData[off.id].winner && selectionData[off.id].winner.seat === seatNum) {
+                    selectionData[off.id].winner = null;
+                }
+            } else {
+                list.push({ seat: seatNum, votes: '' });
+            }
+
+            updateSeatSelectionState();
+            renderCandidates();
+            renderOfficerList();
+            renderSummary();
+        }
+
+        // 更新得票數/得票率（包含即時同步當選者資料）
+        function updateVotes(seatNum, value) {
+            const off = officers[currentOfficerIndex];
+            const candidate = selectionData[off.id].candidates.find(c => c.seat === seatNum);
+            if (candidate) {
+                candidate.votes = value;
+                if (selectionData[off.id].winner && selectionData[off.id].winner.seat === seatNum) {
+                    selectionData[off.id].winner.votes = value;
+                }
+                renderSummary(); // 即時更新右側總覽欄位
+            }
+        }
+
+        function renderCandidates() {
+            const off = officers[currentOfficerIndex];
+            const data = selectionData[off.id];
+            const listEl = document.getElementById('candidate-list');
+            listEl.innerHTML = '';
+
+            if (data.candidates.length === 0) {
+                listEl.innerHTML = '<div class="empty-tip">請先點擊上方學生加入候選人</div>';
+                return;
+            }
+
+            data.candidates.forEach(c => {
+                const isWinner = data.winner && data.winner.seat === c.seat;
+                const displayName = getStudentDisplayName(c.seat);
+                const item = document.createElement('div');
+                item.className = `candidate-item ${isWinner ? 'winner' : ''}`;
+                
+                item.innerHTML = `
+                    <div class="candidate-info">
+                        <span class="candidate-name">${displayName} ${isWinner ? '🏆 (當選)' : ''}</span>
+                        <div class="vote-input-group">
+                            <label>得票/率：</label>
+                            <input type="text" placeholder="例: 18票/60%" value="${c.votes || ''}" oninput="updateVotes(${c.seat}, this.value)">
+                        </div>
+                    </div>
+                    <div class="candidate-actions">
+                        <button class="btn ${isWinner ? 'btn-outline' : 'btn-success'}" onclick="setWinner(${c.seat})">
+                            ${isWinner ? '取消當選' : '設為當選'}
+                        </button>
+                        <button class="btn btn-danger" onclick="toggleCandidate(${c.seat})">移除</button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function setWinner(seatNum) {
+            const off = officers[currentOfficerIndex];
+            const data = selectionData[off.id];
+            const candidate = data.candidates.find(c => c.seat === seatNum);
+
+            if (data.winner && data.winner.seat === seatNum) {
+                data.winner = null;
+            } else {
+                data.winner = { seat: seatNum, votes: candidate ? candidate.votes : '' };
+            }
+
+            renderCandidates();
+            renderOfficerList();
+            renderSummary();
+        }
+
+        function renderSummary() {
+            const tbody = document.getElementById('summary-tbody');
+            tbody.innerHTML = '';
+
+            officers.forEach(off => {
+                const winner = selectionData[off.id].winner;
+                const tr = document.createElement('tr');
+                const winnerName = winner ? getStudentDisplayName(winner.seat) : '未產生';
+                const votesDisplay = (winner && winner.votes) ? winner.votes : '-';
+
+                tr.innerHTML = `
+                    <td><strong>${off.title}</strong></td>
+                    <td style="color: ${winner ? 'var(--primary-dark)' : '#94a3b8'}; font-weight: ${winner ? 'bold' : 'normal'};">
+                        ${winnerName}
+                    </td>
+                    <td style="color: #4b5563;">${votesDisplay}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function downloadCSV() {
+            const className = document.getElementById('class-name').value || '701';
+            let csvContent = "\uFEFF";
+            csvContent += "學校,班級,幹部職稱,當選座號與姓名,得票數/得票率,工作事項與職責\n";
+
+            officers.forEach(off => {
+                const winnerObj = selectionData[off.id].winner;
+                const winner = winnerObj ? getStudentDisplayName(winnerObj.seat) : '未選出';
+                const votes = (winnerObj && winnerObj.votes) ? winnerObj.votes : '未紀錄';
+                csvContent += `"桃園市立楊光國中小","${className}","${off.title}","${winner}","${votes}","${off.duty}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `楊光國中小_${className}班_幹部當選名單.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadTXT() {
+            const className = document.getElementById('class-name').value || '701';
+            let txtContent = `桃園市立楊光國中小 ${className} 班級幹部當選名單\n`;
+            txtContent += `=================================\n\n`;
+
+            officers.forEach(off => {
+                const winnerObj = selectionData[off.id].winner;
+                const winner = winnerObj ? getStudentDisplayName(winnerObj.seat) : '未選出';
+                const votes = (winnerObj && winnerObj.votes) ? `（得票：${winnerObj.votes}）` : '';
+                txtContent += `【${off.title}】：${winner} ${votes}\n`;
+            });
+
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `楊光國中小_${className}班_幹部名單.txt`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.onload = () => {
+            init();
+            renderSummary();
+        };
+    </script>
+</body>
+</html>
