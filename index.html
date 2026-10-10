@@ -12,7 +12,10 @@
   <div class="lobby-container">
     <header class="lobby-header">
       <div class="logo-area">
-        <div class="hall-tag">🏛️ 大廳四 ‧ 班級經營與導師神器專區</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div class="hall-tag">🏛️ 大廳四 ‧ 班級經營與導師神器專區</div>
+          <button id="btnSecurityPin" class="btn-security-lock off">🔓 設定導師防窺密碼鎖</button>
+        </div>
         <h1>🏫 班級經營與導師神器大廳 <code>bio-classroom</code></h1>
         <p>專為班導師量身打造！涵蓋新生始業輔導、教科書發放核對、幹部選拔、座位表照片管理、掃地班務分配與賀喜得獎儀表板</p>
       </div>
@@ -287,6 +290,18 @@
     </footer>
   </div>
 
-  <script src="app.js?v=2.0"></script>
+  <!-- 🔒 導師防窺 PIN 密碼解鎖 Modal -->
+  <div id="pinLockModal" class="pin-modal-overlay hidden">
+    <div class="pin-modal-card">
+      <div class="pin-icon">🔒</div>
+      <h2>導師防窺安全解鎖</h2>
+      <p>此大廳包含班級學生座位表與導師班務管理，請輸入導師密碼解鎖：</p>
+      <input type="password" id="pinInput" placeholder="請輸入密碼" maxlength="10" autocomplete="off">
+      <div id="pinErrorMsg" class="pin-error-text"></div>
+      <button id="btnSubmitPin" class="btn-pin-submit">🔓 解鎖進入大廳</button>
+    </div>
+  </div>
+
+  <script src="app.js?v=2.1"></script>
 </body>
 </html>

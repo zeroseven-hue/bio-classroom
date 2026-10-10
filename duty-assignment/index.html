@@ -465,6 +465,25 @@
         .task-card:hover { transform: translateY(-1px); box-shadow:0 4px 14px rgba(45,85,75,.08); }
 
 </style>
+
+  <!-- 🔒 學生派發模式自動隱藏返回大廳按鈕 -->
+  <script>
+    if (window.location.search.includes('dispatch=true')) {
+      document.documentElement.classList.add('dispatch-mode');
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href*="index.html"], .btn-back').forEach(function(el) {
+          el.style.display = 'none';
+        });
+      });
+    }
+  </script>
+  <style>
+    html.dispatch-mode a[href*="index.html"],
+    html.dispatch-mode .btn-back {
+      display: none !important;
+    }
+  </style>
+
 </head>
 <body>
 

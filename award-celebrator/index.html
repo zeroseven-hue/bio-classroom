@@ -12,6 +12,25 @@ button,input,textarea{font:inherit}.app{min-height:100vh;display:grid;grid-templ
 @media(max-width:820px){.shell{grid-template-columns:1fr}.stage{min-height:560px}.panel{order:-1}.app{padding:10px}.person{width:18%}.headline{min-height:90px}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important}}
 </style>
+
+  <!-- 🔒 學生派發模式自動隱藏返回大廳按鈕 -->
+  <script>
+    if (window.location.search.includes('dispatch=true')) {
+      document.documentElement.classList.add('dispatch-mode');
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a[href*="index.html"], .btn-back').forEach(function(el) {
+          el.style.display = 'none';
+        });
+      });
+    }
+  </script>
+  <style>
+    html.dispatch-mode a[href*="index.html"],
+    html.dispatch-mode .btn-back {
+      display: none !important;
+    }
+  </style>
+
 </head>
 <body>
 <div class="app">
