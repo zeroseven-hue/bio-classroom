@@ -1,4 +1,4 @@
-# 📋 專案 04：班級經營導師神器大廳 (bio-classroom)
+﻿# 📋 專案 04：班級經營導師神器大廳 (bio-classroom)
 
 本檔案為 **大廳四（bio-classroom）** 之權威專案身分證與架構設定檔。
 
@@ -7,7 +7,7 @@
 ## 📌 專案基本資料
 
 * **專案識別名稱**：`04_大廳四_班級經營導師神器 (bio-classroom)`
-* **本機唯一路徑**：`D:\AI Agent\教學專案系統\04_大廳四_班級經營導師神器 (bio-classroom)`
+* **本機唯一路徑**：`D:\antigravity\教學專案系統\04_大廳四_班級經營導師神器 (bio-classroom)`
 * **GitHub 倉庫**：[`zeroseven-hue/bio-classroom`](https://github.com/zeroseven-hue/bio-classroom)
 * **GitHub Pages 線上站點**：[https://zeroseven-hue.github.io/bio-classroom/](https://zeroseven-hue.github.io/bio-classroom/)
 * **Git 主要分支**：`master`
