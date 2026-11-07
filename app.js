@@ -62,12 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnSecurityPin) {
     btnSecurityPin.addEventListener('click', () => {
-      const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY) || '1234';
+      const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY) || '8088';
       const isCurrentlyEnabled = localStorage.getItem(LOCAL_STORAGE_LOCK_ENABLED) === 'true';
 
       const promptMsg = isCurrentlyEnabled 
-        ? `目前【導師安全鎖】已開啟 (預設密碼: ${savedPin})\n輸入新 4 位數密碼可更新；輸入「off」可關閉密碼鎖：`
-        : `請設定 4 位數導師防窺密碼 (例如：1234)：`;
+        ? `目前【導師安全鎖】已開啟\n輸入新 4 位數密碼可更新；輸入「off」可關閉密碼鎖：`
+        : `請設定導師防窺安全密碼：`;
 
       const input = prompt(promptMsg, savedPin);
       if (input === null) return;
