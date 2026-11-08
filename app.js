@@ -1,3 +1,16 @@
+
+// --- 🌓 大廳四 主題切換邏輯 ---
+function initHall4Theme() {
+  const saved = localStorage.getItem('bio_hall4_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+function toggleHall4Theme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', cur);
+  localStorage.setItem('bio_hall4_theme', cur);
+}
+initHall4Theme();
+
 // bio-classroom Main Lobby JavaScript (大廳四) - V2.1 Security & Dispatch Protection
 document.addEventListener('DOMContentLoaded', () => {
   const LOCAL_STORAGE_COLLAPSE_KEY = 'bio_classroom_collapsed_categories';
@@ -43,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('密碼長度建議至少 4 位數字。');
       }
     });
-    btnSecurityPin.textContent = '🔒 教師管理鎖 (8088)';
+    btnSecurityPin.textContent = '🔒 教師管理鎖';
     btnSecurityPin.className = 'btn-security-lock on';
   }
 

@@ -1,3 +1,74 @@
+
+/* 🌓 大廳四 翡翠湖水綠 雙主題支援 (Light / Dark) */
+:root, [data-theme="dark"] {
+  --primary-color: #0d9488;
+  --primary-hover: #0f766e;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+  --card-bg: rgba(31, 41, 55, 0.75);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f9fafb;
+  --text-sub: #9ca3af;
+  --accent-gold: #f59e0b;
+}
+
+[data-theme="light"] {
+  --primary-color: #0d9488;
+  --primary-hover: #0f766e;
+  --bg-gradient: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(13, 148, 136, 0.2);
+  --text-main: #134e4a;
+  --text-sub: #0f766e;
+  --accent-gold: #d97706;
+}
+
+[data-theme="light"] .lobby-header,
+[data-theme="light"] .category-section,
+[data-theme="light"] .dispatch-card {
+  background: #ffffff;
+  border-color: #99f6e4;
+  box-shadow: 0 10px 25px rgba(13, 148, 136, 0.08);
+}
+
+[data-theme="light"] .category-header {
+  background: #f0fdfa;
+}
+[data-theme="light"] .category-header h3,
+[data-theme="light"] .logo-area h1,
+[data-theme="light"] .tool-card h3,
+[data-theme="light"] .lobby-bar-actions h2,
+[data-theme="light"] .dispatch-card h2 {
+  color: #115e59;
+}
+[data-theme="light"] .logo-area h1 code {
+  background: #ccfbf1;
+  color: #0d9488;
+}
+[data-theme="light"] .hall-nav-btn {
+  background: #f8fafc;
+  color: #0d9488;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] .hall-nav-btn:hover {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+[data-theme="light"] .tool-card {
+  background: #ffffff;
+  border-color: #ccfbf1;
+  box-shadow: 0 4px 15px rgba(13, 148, 136, 0.06);
+}
+[data-theme="light"] .btn-toggle-all,
+[data-theme="light"] .btn-collapse-toggle {
+  background: #f0fdfa;
+  color: #0d9488;
+  border-color: #99f6e4;
+}
+[data-theme="light"] .card-tags span {
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
 /* bio-classroom Main Lobby Style (大廳四) - V2.0 Categorized Collapsible Style */
 :root {
   --primary-color: #0d9488;

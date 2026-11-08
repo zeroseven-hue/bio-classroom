@@ -12,9 +12,12 @@
   <div class="lobby-container">
     <header class="lobby-header">
       <div class="logo-area">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
           <div class="hall-tag">🏛️ 大廳四 ‧ 班級經營與導師神器專區</div>
-          <button id="btnSecurityPin" class="btn-security-lock off">🔓 設定導師防窺密碼鎖</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button id="themeToggleBtn" style="background:var(--card-bg, #1f2937); color:var(--text-main, #f9fafb); border:1px solid var(--card-border, #4b5563); padding:7px 14px; border-radius:20px; font-weight:700; cursor:pointer; font-size:0.85rem;" onclick="toggleHall4Theme()">🌓 切換模式</button>
+            <button id="btnSecurityPin" class="btn-security-lock" style="background:#1f2937; color:#f9fafb; border:1px solid #4b5563; padding:7px 16px; border-radius:20px; font-weight:700; cursor:pointer; font-size:0.85rem;" onclick="toggleTeacherPinLock()">🔒 教師管理鎖</button>
+          </div>
         </div>
         <h1>🏫 班級經營與導師神器大廳 <code>bio-classroom</code></h1>
         <p>專為班導師量身打造！涵蓋新生始業輔導、教科書發放核對、幹部選拔、座位表照片管理、掃地班務分配與賀喜得獎儀表板</p>
@@ -289,10 +292,7 @@
 
     </main>
 
-    <footer class="lobby-footer">
-      <p>bio-classroom 班級經營與導師神器大廳 &copy; 2026 | 專為 GitHub Pages 部署設計 | 相容 Windows, iPad & 觸控大螢幕</p>
-    </footer>
-  </div>
+    </div>
 
   <!-- 🔒 導師防窺 PIN 密碼解鎖 Modal -->
   <div id="pinLockModal" class="pin-modal-overlay">
@@ -308,8 +308,9 @@
 
   <script src="app.js?v=2.1"></script>
 
-<!-- 版權與研發宣告頁尾 -->
-<footer class="platform-copyright-footer" style="margin-top: 50px; padding: 26px 16px; text-align: center; color: var(--text-muted, #64748b); font-size: 0.88rem; border-top: 1px dashed rgba(100, 116, 139, 0.25); line-height: 1.8;">
+
+<!-- 全站統一版權與研發宣告頁尾 -->
+<footer class="platform-copyright-footer" style="margin-top: 50px; padding: 26px 16px; text-align: center; color: var(--text-muted, var(--text-sub, #64748b)); font-size: 0.88rem; border-top: 1px dashed rgba(100, 116, 139, 0.25); line-height: 1.8;">
   <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 3px;">🧬 國中生物課堂數位互動教學平台</div>
   <div>研發設計：<b>零柒老師 Selin</b></div>
   <div style="font-size: 0.78rem; opacity: 0.85; margin-top: 4px;">
