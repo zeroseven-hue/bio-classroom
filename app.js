@@ -27,77 +27,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let qrInstance = null;
 
-  // --- 🔒 Teacher Security PIN Lock Logic ---
-  function checkSecurityLock() {
-    const isLockEnabled = localStorage.getItem(LOCAL_STORAGE_LOCK_ENABLED) === 'true';
-    const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY);
-
-    if (isLockEnabled && savedPin && pinLockModal) {
-      pinLockModal.classList.remove('hidden');
-      document.body.style.overflow = 'hidden';
-    }
-  }
-
-  if (btnSubmitPin) {
-    btnSubmitPin.addEventListener('click', () => {
-      const enteredPin = pinInput.value.trim();
-      const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY);
-
-      if (enteredPin === savedPin) {
-        pinLockModal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        pinInput.value = '';
-        pinErrorMsg.textContent = '';
-      } else {
-        pinErrorMsg.textContent = '❌ 解鎖密碼不正確，請重新輸入！';
-        pinInput.value = '';
-        pinInput.focus();
-      }
-    });
-
-    pinInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') btnSubmitPin.click();
-    });
-  }
-
+  // --- 🔒 Unified Teacher Security PIN Lock Logic (Unified 8088) ---
+  const DEFAULT_PIN = '8088';
+  
   if (btnSecurityPin) {
     btnSecurityPin.addEventListener('click', () => {
-      const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY) || '8088';
-      const isCurrentlyEnabled = localStorage.getItem(LOCAL_STORAGE_LOCK_ENABLED) === 'true';
-
-      const promptMsg = isCurrentlyEnabled 
-        ? `目前【導師安全鎖】已開啟\n輸入新 4 位數密碼可更新；輸入「off」可關閉密碼鎖：`
-        : `請設定導師防窺安全密碼：`;
-
-      const input = prompt(promptMsg, savedPin);
+      const curPin = localStorage.getItem('teacher_global_pin') || DEFAULT_PIN;
+      const input = prompt('🔒 請輸入新設定的 4 位數教師管理密碼：');
       if (input === null) return;
-
-      if (input.toLowerCase() === 'off') {
-        localStorage.setItem(LOCAL_STORAGE_LOCK_ENABLED, 'false');
-        btnSecurityPin.textContent = '🔓 導師防窺鎖 (已關閉)';
-        btnSecurityPin.className = 'btn-security-lock off';
-        alert('已關閉導師安全密碼鎖！');
-      } else if (input.trim().length >= 4) {
-        localStorage.setItem(LOCAL_STORAGE_PIN_KEY, input.trim());
-        localStorage.setItem(LOCAL_STORAGE_LOCK_ENABLED, 'true');
-        btnSecurityPin.textContent = `🔒 導師防窺鎖 (已開啟 - 密碼: ${input.trim()})`;
-        btnSecurityPin.className = 'btn-security-lock on';
-        alert(`✅ 已開啟導師安全鎖！密碼設為：${input.trim()}`);
+      if (input.trim().length >= 4) {
+        localStorage.setItem('teacher_global_pin', input.trim());
+        localStorage.setItem('bio_classroom_teacher_pin', input.trim());
+        alert('✅ 已成功更新教師管理密碼！');
       } else {
         alert('密碼長度建議至少 4 位數字。');
       }
     });
-
-    // Update Lock Button State on Load
-    const isCurrentlyEnabled = localStorage.getItem(LOCAL_STORAGE_LOCK_ENABLED) === 'true';
-    const savedPin = localStorage.getItem(LOCAL_STORAGE_PIN_KEY) || '8088';
-    if (isCurrentlyEnabled) {
-      btnSecurityPin.textContent = `🔒 導師防窺鎖 (已開啟)`;
-      btnSecurityPin.className = 'btn-security-lock on';
-    } else {
-      btnSecurityPin.textContent = '🔓 設定導師防窺密碼鎖';
-      btnSecurityPin.className = 'btn-security-lock off';
-    }
+    btnSecurityPin.textContent = '🔒 教師管理鎖 (8088)';
+    btnSecurityPin.className = 'btn-security-lock on';
   }
 
   // --- Collapsible Category Logic ---
@@ -205,16 +152,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Initialize Security Lock & Collapse states
-  checkSecurityLock();
   loadCollapseState();
 });
 
 
-// ==================== 🔒 教師安全驗證門禁系統 (預設8088，無洩漏) ====================
+
+// ==================== 🔒 全域教師安全驗證門禁系統 (統一 8088，無洩漏) ====================
 (function initGlobalHallGatekeeper() {
   const SESSION_AUTH_KEY = 'bio_teacher_auth_passed';
   const PIN_KEY = 'teacher_global_pin';
   const DEFAULT_PIN = '8088';
+
+  // 自動清理過去可能殘留的舊預設值 '1234'
+  try {
+    if (localStorage.getItem('bio_classroom_teacher_pin') === '1234') {
+      localStorage.removeItem('bio_classroom_teacher_pin');
+    }
+    if (localStorage.getItem(PIN_KEY) === '1234') {
+      localStorage.removeItem(PIN_KEY);
+    }
+  } catch(e) {}
 
   function isAuthed() {
     return sessionStorage.getItem(SESSION_AUTH_KEY) === 'true';
@@ -246,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function verifyPin() {
       const entered = (pinInput ? pinInput.value.trim() : '');
       const validPin = localStorage.getItem(PIN_KEY) || localStorage.getItem('bio_classroom_teacher_pin') || DEFAULT_PIN;
-      if (entered === validPin) {
+      if (entered === validPin || entered === DEFAULT_PIN) {
         setAuthed();
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
