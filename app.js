@@ -1,7 +1,7 @@
 
 // --- 🌓 大廳四 主題切換邏輯 ---
 function initHall4Theme() {
-  const saved = localStorage.getItem('bio_hall4_theme') || 'dark';
+  const saved = localStorage.getItem('bio_hall4_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
 }
 function toggleHall4Theme() {
